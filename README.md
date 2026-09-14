@@ -37,6 +37,28 @@ docker compose restart opencode
 For automated hosting, inject `OPENCODE_SERVER_PASSWORD` and
 `GOOGLE_GENERATIVE_AI_API_KEY` through the container environment.
 
+### Environment variables
+
+| Variable | Required/default | Purpose |
+| --- | --- | --- |
+| `OPENCODE_SERVER_PASSWORD` | Required | Random password of at least 32 characters for UI/API access. |
+| `OPENCODE_SERVER_USERNAME` | `opencode` | UI/API username. |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | For Gemini API-key access | Google API key; omit when using Google OAuth. |
+| `OPENCODE_GEMINI_PROJECT_ID` | For organization-backed Google OAuth | Code Assist Google Cloud project; omit for API-key access. |
+| `OPENCODE_CONFIG` | `/etc/opencode/opencode.json` | Configuration path inside the container. |
+| `OPENCODE_HEADLESS` | `1` | Manual OAuth callback entry for remote hosting. |
+| `OPENCODE_CLIENT` | `app` | Client identifier used by integrations. |
+| `WAKATIME_HOME` | Unset | Optional WakaTime config/state location; normally uses `/data`. |
+
+The image also sets `HOME=/data`, `XDG_CONFIG_HOME=/data/.config`,
+`XDG_DATA_HOME=/data/.local/share`, `XDG_STATE_HOME=/data/.local/state`,
+`XDG_CACHE_HOME=/data/.cache`, and `SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt`.
+Keep these defaults for persistent storage. Port 4096 is set by the startup
+command, not a `PORT` variable.
+
+Copilot uses device login, not a required token environment variable. WakaTime's
+key goes in the config below. Lunch Money is disabled, so needs no credential.
+
 For [WakaTime](https://github.com/angristan/opencode-wakatime), create
 `/data/.wakatime.cfg` owned by `1000:1000`, mode `600`:
 
