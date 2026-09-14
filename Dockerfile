@@ -1,4 +1,4 @@
-FROM node:22-bookworm-slim
+FROM node:26-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential ca-certificates curl git openssh-client python3 \
