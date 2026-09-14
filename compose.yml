@@ -1,0 +1,21 @@
+services:
+  opencode:
+    image: ghcr.io/icco/opencode-server:main
+    restart: unless-stopped
+    stop_grace_period: 30s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    mem_limit: 4g
+    cpus: 2
+    environment:
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Set OPENCODE_SERVER_PASSWORD in .env}
+      OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:-opencode}
+    ports:
+      - 127.0.0.1:4096:4096
+    volumes:
+      - data:/data
+volumes:
+  data:
