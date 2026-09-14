@@ -8,5 +8,17 @@
   "plugin": [
     "opencode-gemini-auth@1.4.15",
     "opencode-wakatime@1.3.9"
-  ]
+  ],
+  "instructions": [
+    "instructions.md"
+  ],
+  "lsp": true,
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 10000
+  },
+  "mcp": {
+    "lunchmoney": {}
+  }
 }
