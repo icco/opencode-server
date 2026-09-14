@@ -3,7 +3,8 @@
 A reusable, non-root container for [OpenCode](https://opencode.ai)'s web UI and
 API, with Google Gemini, GitHub Copilot, and WakaTime support.
 
-Image: `ghcr.io/icco/opencode-server:main` (Linux amd64).
+Image: `ghcr.io/icco/opencode-server:main`. The publishing workflow builds native
+Linux amd64 and arm64 images and combines them into a multi-platform tag.
 
 Includes Node.js 22/npm, Python 3, git/SSH, ripgrep, and C/C++ build tools.
 OpenCode runs as UID/GID 1000 with `tini` reaping child processes. The image
@@ -151,7 +152,9 @@ docker compose up -d --force-recreate opencode
 
 OpenCode is pinned in `Dockerfile`, and plugins in `opencode.json`. Change those
 versions to upgrade. The GitHub Actions workflow builds and smoke-tests every PR
-and publishes the `main` image after a successful main-branch build. Forks publish
+on native amd64/arm64 runners and publishes the multi-platform `main` image with
+a build-provenance attestation after both platforms pass. PR builds run without
+registry login or publication. Forks publish
 under their own repository name. GHCR package visibility is separate from
 repository visibility; set the package public for anonymous pulls.
 
@@ -159,7 +162,20 @@ Build and test locally (Docker, curl, jq, OpenSSL, and `timeout` required):
 
 ```sh
 docker build -t opencode-server .
-sh scripts/smoke-test.sh opencode-server
+bash scripts/smoke-test.sh opencode-server
+```
+
+CI follows the service workflow layout used by `icco/reportd`: Docker
+build/manifest jobs, Conventional Commit PR titles, YAML/JSON linting and
+formatting, tests, and weekly CodeQL analysis. Tests here cover shell scripts,
+Compose/config validation, and container smoke tests; CodeQL analyzes GitHub
+Actions. Actions are SHA-pinned and updated by Dependabot. Formatting commits
+are limited to same-repository, non-Dependabot PRs, excluding workflow files.
+
+Verify published image provenance with:
+
+```sh
+gh attestation verify oci://ghcr.io/icco/opencode-server:main --owner icco
 ```
 
 Inspired by the [OpenCode Railway template](https://railway.com/deploy/opencode-ai).

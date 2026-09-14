@@ -1,0 +1,48 @@
+name: yaml-json
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  yaml-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Lint YAML
+        run: yamllint .
+  format:
+    # Fork and Dependabot PRs have read-only tokens; lint still runs for them.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.head_ref || github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - name: Install yq
+        uses: dcarbone/install-yq-action@4075b4dca348d74bd83f2bf82d30f25d7c54539b # v1.3.1
+      - name: Format YAML and JSON files with yq
+        run: |
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              *.yml|*.yaml) yq -iP '.' "$file" ;;
+              *.json) yq -iP -o=json '.' "$file" ;;
+            esac
+          done < <(git ls-files -z)
+      - name: Commit formatting changes
+        if: github.event_name == 'pull_request'
+        uses: stefanzweifel/git-auto-commit-action@4a55954c782fc1ea30b9056cd3e7a2b40ca8887d # v7
+        with:
+          commit_message: 'style: format YAML and JSON with yq'
+          file_pattern: '. :!.github/workflows/*'
+          commit_author: GitHub Actions <actions@github.com>
+          commit_user_name: github-actions[bot]
+          commit_user_email: github-actions[bot]@users.noreply.github.com

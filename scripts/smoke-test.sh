@@ -1,5 +1,5 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -euo pipefail
 
 image=${1:?Usage: smoke-test.sh IMAGE}
 name="opencode-test-$$"
@@ -27,6 +27,7 @@ for attempt in $(seq 1 60); do
   if docker exec "$name" /usr/local/bin/healthcheck.sh; then
     break
   fi
+  printf 'Waiting for OpenCode (%s/60)\n' "$attempt"
   sleep 3
 done
 docker exec "$name" /usr/local/bin/healthcheck.sh
