@@ -23,6 +23,8 @@ jobs:
         env:
           OPENCODE_SERVER_PASSWORD: validation-only-not-a-deployment-password
         run: docker compose config --quiet
+      - name: Test credential loading
+        run: python3 scripts/test_entrypoint.py
       - name: Validate OpenCode configuration
         run: |
           python -m pip install jsonschema==4.26.0
