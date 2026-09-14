@@ -19,11 +19,6 @@ characters (`openssl rand -hex 32`). Open <http://localhost:4096> and log in as
 The `/data` volume preserves workspaces, sessions, credentials, and caches.
 Back it up. Host bind mounts must be writable by UID/GID 1000.
 
-For Docker secrets, pass `OPENCODE_SERVER_PASSWORD_FILE=/run/secrets/opencode_password`
-instead of `OPENCODE_SERVER_PASSWORD` and mount a password file readable by UID 1000
-there. The entrypoint and health check support both methods; configure only one.
-Gemini also supports `GOOGLE_GENERATIVE_AI_API_KEY_FILE` for a mounted API key.
-
 ## Connect providers
 
 Run for each provider, then restart and select a model in the UI:
@@ -38,6 +33,9 @@ docker compose restart opencode
   Assist can use OAuth: open the login URL and paste the full localhost redirect
   URL into the prompt. Set `OPENCODE_GEMINI_PROJECT_ID` in the container environment.
   Consumer OAuth is discontinued; see the [Gemini plugin docs](https://github.com/jenslys/opencode-gemini-auth).
+
+For automated hosting, inject `OPENCODE_SERVER_PASSWORD` and
+`GOOGLE_GENERATIVE_AI_API_KEY` through the container environment.
 
 For [WakaTime](https://github.com/angristan/opencode-wakatime), create
 `/data/.wakatime.cfg` owned by `1000:1000`, mode `600`:
