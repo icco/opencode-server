@@ -1,0 +1,38 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Check shell scripts
+        run: |
+          sh -n entrypoint.sh
+          sh -n healthcheck.sh
+          bash -n scripts/smoke-test.sh
+          shellcheck entrypoint.sh healthcheck.sh scripts/smoke-test.sh
+      - name: Validate Compose
+        env:
+          OPENCODE_SERVER_PASSWORD: validation-only-not-a-deployment-password
+        run: docker compose config --quiet
+      - name: Validate OpenCode configuration
+        run: |
+          python -m pip install jsonschema==4.26.0
+          curl --fail --silent --show-error --location https://opencode.ai/config.json -o "$RUNNER_TEMP/opencode-schema.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from jsonschema import validate
+
+          schema = json.loads((Path(os.environ["RUNNER_TEMP"]) / "opencode-schema.json").read_text())
+          validate(json.loads(Path("opencode.json").read_text()), schema)
+          PY
