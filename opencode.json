@@ -19,6 +19,8 @@
     "reserved": 10000
   },
   "mcp": {
-    "lunchmoney": {}
+    "lunchmoney": {
+      "enabled": false
+    }
   }
 }
