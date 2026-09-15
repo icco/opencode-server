@@ -1,7 +1,7 @@
 FROM node:26-bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential ca-certificates curl git openssh-client python3 \
+      build-essential ca-certificates curl gh git openssh-client python3 \
       python3-pip python3-venv ripgrep tini unzip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,6 +23,7 @@ ENV HOME=/data \
 COPY opencode.json /etc/opencode/opencode.json
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode \
+    && usermod --home /data node \
     && chown -R node:node /data
 
 USER node

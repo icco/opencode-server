@@ -11,11 +11,18 @@ services:
     mem_limit: 4g
     cpus: 2
     environment:
+      GH_TOKEN: ${GH_TOKEN:-}
       OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Set OPENCODE_SERVER_PASSWORD in .env}
       OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:-opencode}
     ports:
       - 127.0.0.1:4096:4096
     volumes:
       - data:/data
+      - type: bind
+        source: ${HOME}/.ssh
+        target: /data/.ssh
+        read_only: true
+        bind:
+          create_host_path: false
 volumes:
   data:
