@@ -1,4 +1,8 @@
+FROM golang:1.27.1-bookworm AS golang
+
 FROM node:26-bookworm-slim
+
+COPY --from=golang /usr/local/go /usr/local/go
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       build-essential ca-certificates curl gh git openssh-client python3 \
@@ -6,11 +10,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ARG OPENCODE_VERSION=1.18.31
-RUN npm install -g "opencode-ai@${OPENCODE_VERSION}" \
+ARG TYPESCRIPT_VERSION=7.0.2
+RUN npm install -g "opencode-ai@${OPENCODE_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
     && npm cache clean --force \
     && opencode --version
 
 ENV HOME=/data \
+    GOPATH=/data/go \
+    PATH=/usr/local/go/bin:/data/go/bin:${PATH} \
     XDG_CONFIG_HOME=/data/.config \
     XDG_DATA_HOME=/data/.local/share \
     XDG_STATE_HOME=/data/.local/state \

@@ -92,6 +92,8 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
 
 ## Configuration and development
 
+- The image includes Go (`go`, `gofmt`) and TypeScript (`tsc`). Go-installed tools
+  in `/data/go/bin` are on `PATH`; Go modules and build caches persist under `/data`.
 - Defaults live in [`opencode.json`](opencode.json), loaded at
   `/etc/opencode/opencode.json`. Mount a replacement there read-only to customize.
 - Restart OpenCode after config changes. After environment/password changes, run
