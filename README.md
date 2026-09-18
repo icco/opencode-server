@@ -94,6 +94,14 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
 
 - The image includes Go (`go`, `gofmt`) and TypeScript (`tsc`). Go-installed tools
   in `/data/go/bin` are on `PATH`; Go modules and build caches persist under `/data`.
+- Script and shell tools include:
+  - Search/navigation: `ag`, `rg`, `fd` (also available as `fdfind`), `fzf`, `tree`,
+    and `zoxide`.
+  - Data/text processing: `jq`, Mike Farah's `yq` v4 (`eval-all`/`ireduce`
+    compatible), `sponge` (from `moreutils`), and `envsubst`.
+  - Files/transfers: `file`, `rsync`, `wget`, `zip`, `unzip`, and `xz`.
+  - Shell/development: `zsh`, Bash completion, `shellcheck`, `git-lfs`, `less`,
+    `tmux`, `vim`, `openssl`, and procps tools (`ps`, `pgrep`, `watch`).
 - Defaults live in [`opencode.json`](opencode.json), loaded at
   `/etc/opencode/opencode.json`. Mount a replacement there read-only to customize.
 - Restart OpenCode after config changes. After environment/password changes, run
