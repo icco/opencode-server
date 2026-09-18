@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
       gettext-base gh git git-lfs jq less moreutils openssh-client openssl \
       procps python3 python3-pip python3-venv ripgrep rsync shellcheck \
-      silversearcher-ag tini tmux tree unzip vim-tiny wget xz-utils zip zoxide zsh \
+      silversearcher-ag tini tmux tree unzip vim wget xz-utils zip zoxide zsh \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 

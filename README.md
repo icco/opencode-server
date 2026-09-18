@@ -101,7 +101,7 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
     compatible), `sponge` (from `moreutils`), and `envsubst`.
   - Files/transfers: `file`, `rsync`, `wget`, `zip`, `unzip`, and `xz`.
   - Shell/development: `zsh`, Bash completion, `shellcheck`, `git-lfs`, `less`,
-    `tmux`, `vim` (minimal build), `openssl`, and procps tools (`ps`, `pgrep`, `watch`).
+    `tmux`, `vim`, `openssl`, and procps tools (`ps`, `pgrep`, `watch`).
 - Defaults live in [`opencode.json`](opencode.json), loaded at
   `/etc/opencode/opencode.json`. Mount a replacement there read-only to customize.
 - Restart OpenCode after config changes. After environment/password changes, run
