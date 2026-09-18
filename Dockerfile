@@ -5,8 +5,8 @@ FROM node:26-bookworm-slim
 COPY --from=golang /usr/local/go /usr/local/go
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential ca-certificates curl gh git openssh-client python3 \
-      python3-pip python3-venv ripgrep tini unzip \
+      build-essential ca-certificates curl gh git moreutils openssh-client python3 \
+      python3-pip python3-venv ripgrep tini unzip yq zsh \
     && rm -rf /var/lib/apt/lists/*
 
 ARG OPENCODE_VERSION=1.18.31
