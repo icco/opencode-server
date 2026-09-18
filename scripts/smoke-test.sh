@@ -5,6 +5,32 @@ image=${1:?Usage: smoke-test.sh IMAGE}
 name="opencode-test-$$"
 password=$(openssl rand -hex 24)
 
+# Check script dependencies as the non-root runtime user, without starting the server.
+docker run --rm --entrypoint sh "$image" -ec '
+  for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
+    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch; do
+    command -v "$tool"
+  done
+'
+
+# Exercise the yq v4 merge syntax used by generate_mappings.sh, with sponge
+# writing back to an input file from a zsh pipeline.
+docker run --rm --entrypoint zsh "$image" -euc '
+  set -o pipefail
+  tmp=$(mktemp -d)
+  trap '\''rm -rf "$tmp"'\'' EXIT
+  printf "entries:\n  - guid: example\n    title: original\n" > "$tmp/base.yaml"
+  printf "entries:\n  - guid: example\n    title: override\n" > "$tmp/local.yaml"
+  yq eval-all '\''
+    .entries[] as $entry ireduce ({}; .[$entry.guid // $entry.title] = $entry) |
+    {"entries": (to_entries | map(.value) | sort_by(.title))} |
+    ... comments=""
+  '\'' "$tmp/base.yaml" "$tmp/local.yaml" | sponge "$tmp/base.yaml"
+  yq -iP . "$tmp/base.yaml"
+  yq -o=json . "$tmp/base.yaml" |
+    jq -e '\''.entries == [{"guid": "example", "title": "override"}]'\''
+'
+
 # Startup must fail promptly when no password is provided.
 status=0
 timeout 15 docker run --rm "$image" || status=$?

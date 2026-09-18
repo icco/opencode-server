@@ -1,13 +1,21 @@
 FROM golang:1.27.1-bookworm AS golang
 
+FROM golang AS yq
+ARG YQ_VERSION=v4.53.6
+RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
+
 FROM node:26-bookworm-slim
 
 COPY --from=golang /usr/local/go /usr/local/go
+COPY --from=yq /out/yq /usr/local/bin/yq
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential ca-certificates curl gh git moreutils openssh-client python3 \
-      python3-pip python3-venv ripgrep tini unzip yq zsh \
-    && rm -rf /var/lib/apt/lists/*
+      bash-completion build-essential ca-certificates curl fd-find file fzf \
+      gettext-base gh git git-lfs jq less moreutils openssh-client openssl \
+      procps python3 python3-pip python3-venv ripgrep rsync shellcheck \
+      silversearcher-ag tini tmux tree unzip vim-tiny wget xz-utils zip zoxide zsh \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
 ARG OPENCODE_VERSION=1.18.31
 ARG TYPESCRIPT_VERSION=7.0.2
