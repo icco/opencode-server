@@ -1,10 +1,10 @@
-FROM golang:1.27.1-bookworm AS golang
+FROM golang:1.27.1-trixie AS golang
 
 FROM golang AS yq
 ARG YQ_VERSION=v4.53.6
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
-FROM node:26-bookworm-slim
+FROM node:26.9.0-trixie-slim
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq

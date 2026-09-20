@@ -29,6 +29,9 @@ jobs:
           fetch-depth: 0
       - name: Install yq
         uses: dcarbone/install-yq-action@4075b4dca348d74bd83f2bf82d30f25d7c54539b # v1.3.1
+        with:
+          version: v4.53.6
+          force: true
       - name: Format YAML and JSON files with yq
         run: |
           while IFS= read -r -d '' file; do
