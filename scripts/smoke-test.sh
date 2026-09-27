@@ -49,7 +49,12 @@ docker run -d --name "$name" \
   -p 127.0.0.1::4096 \
   -e "OPENCODE_SERVER_PASSWORD=$password" \
   "$image"
-trap 'docker logs "$name"; docker rm -f "$name"' EXIT
+cleanup() {
+  docker logs "$name"
+  docker exec "$name" sh -c 'for log in "$XDG_DATA_HOME"/opencode/log/*.log; do [ ! -f "$log" ] || cat "$log"; done' || true
+  docker rm -f "$name"
+}
+trap cleanup EXIT
 port=$(docker port "$name" 4096/tcp | cut -d: -f2)
 url="http://127.0.0.1:$port"
 
