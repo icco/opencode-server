@@ -1,5 +1,7 @@
 {
-  "agents": ["auto"],
+  "agents": [
+    "auto"
+  ],
   "quotaCacheSeconds": 60,
   "quotaReserveFraction": 0.1,
   "unknownQuota": "allow",
