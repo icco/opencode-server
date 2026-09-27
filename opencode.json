@@ -1,13 +1,21 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
+  "default_agent": "auto",
+  "agent": {
+    "auto": {
+      "description": "Quality-first model routing using task rules and available quota",
+      "mode": "primary"
+    }
+  },
   "enabled_providers": [
     "google",
     "github-copilot"
   ],
   "plugin": [
     "opencode-gemini-auth@1.4.15",
-    "opencode-wakatime@1.3.9"
+    "opencode-wakatime@1.3.9",
+    "./plugins/model-router.mjs"
   ],
   "instructions": [
     "instructions.md"

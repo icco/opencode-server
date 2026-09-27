@@ -19,6 +19,8 @@ jobs:
           sh -n healthcheck.sh
           bash -n scripts/smoke-test.sh
           shellcheck entrypoint.sh healthcheck.sh scripts/smoke-test.sh
+      - name: Test model routing
+        run: node --test tests/*.test.mjs
       - name: Validate Compose
         env:
           OPENCODE_SERVER_PASSWORD: validation-only-not-a-deployment-password

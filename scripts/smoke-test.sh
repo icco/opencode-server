@@ -71,6 +71,14 @@ curl --fail --silent --show-error --max-time 120 \
 curl --fail --silent --show-error --max-time 120 \
   --user "opencode:$password" "$url/config" \
   | jq -e '.plugin | any(contains("opencode-wakatime"))'
+curl --fail --silent --show-error --max-time 120 \
+  --user "opencode:$password" "$url/config" \
+  | jq -e '.default_agent == "auto" and (.plugin | any(contains("model-router.mjs")))'
+docker exec "$name" node --input-type=module -e '
+  const { default: plugin } = await import("/etc/opencode/plugins/model-router.mjs");
+  const hooks = await plugin({});
+  if (typeof hooks["chat.message"] !== "function") process.exit(1);
+'
 
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
