@@ -4,7 +4,7 @@ FROM golang AS yq
 ARG YQ_VERSION=v4.53.6
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
-FROM node:26.10.0-trixie-slim
+FROM node:26.10.0-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
-ARG OPENCODE_VERSION=1.18.32
+ARG OPENCODE_VERSION=2.0.18
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.6.0
 ARG TARGETARCH
@@ -29,9 +29,18 @@ RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; e
       "https://registry.npmjs.org/@pnpm/exe.linux-${arch}/-/exe.linux-${arch}-${PNPM_VERSION}.tgz" \
       | tar -xz --strip-components=1 -C /opt/pnpm-cli \
     && ln -s /opt/pnpm-cli/pnpm /usr/local/bin/pnpm \
-    && pnpm --allow-build=opencode-ai add --global \
-      "opencode-ai@${OPENCODE_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
+    && pnpm --allow-build=@opencode/cli add --global \
+      "@opencode/cli@${OPENCODE_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
     && opencode --version
+
+FROM tools AS config
+WORKDIR /build
+COPY package.json pnpm-lock.yaml opencode.json orchestra.jsonc ./
+COPY scripts/build-config.mjs ./scripts/build-config.mjs
+RUN pnpm install --frozen-lockfile --ignore-scripts --no-optional \
+    && node scripts/build-config.mjs /build/runtime.json
+
+FROM tools
 
 ENV HOME=/data \
     PNPM_HOME=/data/.local/share/pnpm \
@@ -46,8 +55,8 @@ ENV HOME=/data \
     OPENCODE_CLIENT=app \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-COPY opencode.json /etc/opencode/opencode.json
-COPY opencode-auto-router.json /etc/opencode/opencode-auto-router.json
+COPY --from=config /build/runtime.json /etc/opencode/opencode.json
+COPY orchestra.jsonc /etc/opencode/orchestra.jsonc
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
@@ -59,4 +68,4 @@ EXPOSE 4096
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD ["/usr/local/bin/healthcheck.sh"]
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
-CMD ["opencode", "web", "--hostname", "0.0.0.0", "--port", "4096"]
+CMD ["opencode", "serve", "--hostname", "0.0.0.0", "--port", "4096"]

@@ -1,58 +1,47 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createAutoRouterWithConfig } from "opencode-auto-router";
+import { Schema } from "effect";
+import { Config } from "@opencode/schema/config";
+import { buildConfig } from "../scripts/build-config.mjs";
 
-// Exercise the pinned upstream package, not a copy of its implementation.
-const { normalizeConfig } = await import(new URL("./config.js", import.meta.resolve("opencode-auto-router")));
-const raw = JSON.parse(await readFile(new URL("../opencode-auto-router.json", import.meta.url)));
-const config = normalizeConfig(raw);
-config.notify = false;
-const selected = { providerID: "auto-router", modelID: "quality" };
-const reasoning = "Think carefully, weigh the options, and evaluate the architecture.";
-async function route(hooks, text, model = selected, sessionID = "test") {
-  const output = { message: { model }, parts: [{ type: "text", text }] };
-  await hooks["chat.message"]({ sessionID, agent: "build", model }, output);
-  return output.message.model;
-}
-const ref = (model) => `${model.providerID}/${model.modelID}`;
+const config = JSON.parse(await readFile(new URL("../opencode.json", import.meta.url)));
+const policy = JSON.parse(await readFile(new URL("../orchestra.jsonc", import.meta.url)));
+const upstream = new URL("./", import.meta.resolve("@oeronteros-1/opencode-orchestra"));
+const { orchestraConfigSchema } = await import(new URL("config/schema.js", upstream));
+const { createAgentSet } = await import(new URL("agents/build.js", upstream));
+const { loadPrompts } = await import(new URL("prompts/load.js", upstream));
 
-test("deployed config and tests use the same upstream version and router model", async () => {
-  const server = JSON.parse(await readFile(new URL("../opencode.json", import.meta.url)));
-  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url)));
-  assert.ok(server.plugin.includes(`opencode-auto-router@${pkg.devDependencies["opencode-auto-router"]}`));
-  assert.equal(server.model, ref(selected));
-  assert.ok(server.enabled_providers.includes(selected.providerID));
-  assert.ok(server.provider[selected.providerID].models[selected.modelID]);
-  for (const tier of ["SIMPLE", "MEDIUM", "COMPLEX", "REASONING"]) {
-    assert.ok(raw.routers[0].tierModels[tier].model);
-    for (const model of [raw.routers[0].tierModels[tier].model, ...raw.routers[0].tierModels[tier].fallbacks]) {
-      assert.ok(server.enabled_providers.includes(model.split("/")[0]));
-    }
+test("configuration validates strictly against the installed V2 schema", () => {
+  const parsed = Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(config);
+  assert.equal(parsed.default_agent, "orch-lead");
+  assert.equal(parsed.model.providerID, "github-copilot");
+});
+
+test("Orchestra policy validates and all upstream agents have V2 config seeds", async () => {
+  const parsed = orchestraConfigSchema.parse(policy);
+  const agents = createAgentSet(parsed, await loadPrompts());
+  for (const name of Object.keys(agents)) assert.ok(config.agents[name], `missing agent seed: ${name}`);
+  assert.equal(agents["orch-lead"].model, "github-copilot/gpt-6-astra");
+  assert.equal(agents["orch-docs"].model, "google/gemini-3.8-flash");
+  assert.equal(agents["orch-judge"].model, "github-copilot/claude-opus-5.5");
+  assert.equal(agents["orch-repo"].permission.edit ?? agents["orch-repo"].permission["*"], "deny");
+});
+
+test("configured fallback chains refer to seeded agents and allowed providers", () => {
+  const allowed = new Set(config.experimental.policies.filter(p => p.effect === "allow").map(p => p.resource));
+  for (const [agent, models] of Object.entries(policy.models.fallback.agents)) {
+    assert.ok(config.agents[agent]);
+    assert.ok(models.length > 0);
+    for (const model of models) assert.ok(allowed.has(model.split("/")[0]));
   }
-  // Internal tasks must not try to send requests to the virtual router provider.
-  assert.notEqual(server.small_model.split("/")[0], "auto-router");
-  assert.notEqual(server.agent.compaction.model.split("/")[0], "auto-router");
 });
 
-test("upstream selects configured simple and reasoning tiers and preserves manual selection", async () => {
-  const hooks = createAutoRouterWithConfig(config);
-  assert.equal(ref(await route(hooks, "hello")), raw.routers[0].tierModels.SIMPLE.model);
-  assert.equal(ref(await route(hooks, reasoning)), raw.routers[0].tierModels.REASONING.model);
-  const manual = { providerID: "github-copilot", modelID: "gpt-6-astra" };
-  assert.deepEqual(await route(hooks, "hello", manual), manual);
-});
-
-test("upstream advances the configured chain after quota failure and resets after success", async () => {
-  const hooks = createAutoRouterWithConfig(config);
-  await route(hooks, reasoning);
-  await hooks.event({ event: { type: "session.error", properties: {
-    sessionID: "test", error: { name: "APIError", data: { statusCode: 429, message: "quota exhausted" } },
-  } } });
-  const fallback = await route(hooks, reasoning);
-  assert.equal(ref(fallback), raw.routers[0].tierModels.REASONING.fallbacks[0]);
-  await hooks.event({ event: { type: "message.updated", properties: { info: {
-    sessionID: "test", role: "assistant", ...fallback, time: { completed: Date.now() },
-  } } } });
-  assert.equal(ref(await route(hooks, reasoning)), raw.routers[0].tierModels.REASONING.model);
+test("generated V2 agents preserve upstream instructions and read-only worker permissions", async () => {
+  const runtime = await buildConfig();
+  Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(runtime);
+  assert.ok(runtime.agents["orch-lead"].system.length > 100);
+  const worker = runtime.agents["orch-repo"];
+  assert.equal(worker.permissions.find(p => p.action === "*").effect, "deny");
+  assert.equal(worker.model, policy.models.agents["orch-repo"]);
 });

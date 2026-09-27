@@ -1,0 +1,41 @@
+{
+  "$schema": "https://unpkg.com/@oeronteros-1/opencode-orchestra@3.0.4/schema/opencode-orchestra.schema.json",
+  "budget": "quality",
+  "models": {
+    "strategy": "auto",
+    "agents": {
+      "orch-lead": "github-copilot/gpt-6-astra",
+      "orch-repo": "github-copilot/claude-sonnet-5",
+      "orch-docs": "google/gemini-3.8-flash",
+      "orch-tests": "github-copilot/gpt-6-astra",
+      "orch-research": "google/gemini-3.1-pro-preview",
+      "orch-critic": "github-copilot/claude-opus-5.5",
+      "orch-security": "github-copilot/claude-opus-5.5",
+      "orch-merge": "github-copilot/gpt-6-astra",
+      "orch-judge": "github-copilot/claude-opus-5.5"
+    },
+    "fallback": {
+      "enabled": true,
+      "maxRetries": 2,
+      "agents": {
+        "orch-repo": ["github-copilot/gpt-6-astra", "google/gemini-3.1-pro-preview"],
+        "orch-docs": ["github-copilot/claude-sonnet-5", "github-copilot/gpt-6-astra"],
+        "orch-tests": ["github-copilot/claude-sonnet-5", "google/gemini-3.1-pro-preview"],
+        "orch-research": ["github-copilot/gpt-6-astra", "google/gemini-3.8-flash"],
+        "orch-critic": ["github-copilot/gpt-6-astra", "google/gemini-3.1-pro-preview"],
+        "orch-security": ["github-copilot/gpt-6-astra", "google/gemini-3.1-pro-preview"],
+        "orch-merge": ["github-copilot/claude-opus-5.5", "google/gemini-3.1-pro-preview"],
+        "orch-judge": ["github-copilot/gpt-6-astra", "google/gemini-3.1-pro-preview"]
+      }
+    }
+  },
+  "orchestration": {
+    "parallelWorkers": 2,
+    "maxWorkers": 8,
+    "maxDelegationDepth": 2,
+    "parallelEditors": 0,
+    "exposeWorkers": false
+  },
+  "permissions": { "autoAcceptAll": false },
+  "telemetry": { "enabled": true, "storeTexts": false }
+}
