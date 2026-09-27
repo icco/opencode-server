@@ -35,8 +35,27 @@ jobs:
           import json
           import os
           from pathlib import Path
-          from jsonschema import validate
+          from urllib.request import urlopen
+          from jsonschema import Draft202012Validator
+          from referencing import Registry, Resource
 
           schema = json.loads((Path(os.environ["RUNNER_TEMP"]) / "opencode-schema.json").read_text())
-          validate(json.loads(Path("opencode.json").read_text()), schema)
+          config = json.loads(Path("opencode.json").read_text())
+          model_url = "https://models.dev/model-schema.json"
+          with urlopen(model_url, timeout=30) as response:
+              models = json.load(response)
+          # The published catalog cannot contain locally declared virtual models.
+          # Extend only with IDs explicitly defined under provider.models; retain
+          # catalog validation for other model references and all config fields.
+          models["$defs"]["Model"]["enum"].extend(
+              f"{provider}/{model}"
+              for provider, definition in config.get("provider", {}).items()
+              for model in definition.get("models", {})
+          )
+          registry = Registry().with_resource(model_url, Resource.from_contents(models))
+          errors = list(Draft202012Validator(schema, registry=registry).iter_errors(config))
+          for error in errors:
+              print(f"{error.json_path}: {error.message[:300]}")
+          if errors:
+              raise SystemExit(1)
           PY
