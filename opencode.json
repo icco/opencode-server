@@ -1,14 +1,49 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "autoupdate": false,
+  "model": "auto-router/quality",
+  "small_model": "github-copilot/gpt-5.4-mini",
+  "agent": {
+    "compaction": {
+      "model": "github-copilot/gpt-6-astra"
+    }
+  },
   "enabled_providers": [
     "google",
-    "github-copilot"
+    "github-copilot",
+    "auto-router"
   ],
   "plugin": [
     "opencode-gemini-auth@1.4.15",
-    "opencode-wakatime@1.3.9"
+    "opencode-wakatime@1.3.9",
+    "opencode-auto-router@0.1.4",
+    "@slkiser/opencode-quota@4.10.5"
   ],
+  "provider": {
+    "auto-router": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Local task router",
+      "models": {
+        "quality": {
+          "name": "Auto Router (quality-first)",
+          "tool_call": true,
+          "limit": {
+            "context": 128000,
+            "output": 16000
+          },
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          }
+        }
+      }
+    }
+  },
   "instructions": [
     "instructions.md"
   ],

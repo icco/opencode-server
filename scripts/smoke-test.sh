@@ -8,9 +8,13 @@ password=$(openssl rand -hex 24)
 # Check script dependencies as the non-root runtime user, without starting the server.
 docker run --rm --entrypoint sh "$image" -ec '
   for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
-    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch; do
+    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm; do
     command -v "$tool"
   done
+  test "$(pnpm --version)" = 10.34.5
+  opencode --version
+  tsc --version
+  test -w "$(dirname "$PNPM_HOME")"
 '
 
 # Exercise the yq v4 merge syntax used by generate_mappings.sh, with sponge
@@ -71,6 +75,28 @@ curl --fail --silent --show-error --max-time 120 \
 curl --fail --silent --show-error --max-time 120 \
   --user "opencode:$password" "$url/config" \
   | jq -e '.plugin | any(contains("opencode-wakatime"))'
+curl --fail --silent --show-error --max-time 120 \
+  --user "opencode:$password" "$url/config" \
+  | jq -e '.model == "auto-router/quality" and
+    (.plugin | any(contains("opencode-auto-router"))) and
+    (.plugin | any(contains("@slkiser/opencode-quota")))'
+docker exec "$name" sh -ec '
+  cmp /etc/opencode/opencode-auto-router.json "$HOME/.config/opencode/opencode-auto-router.json"
+'
+curl --fail --silent --show-error --max-time 120 \
+  --user "opencode:$password" "$url/command" \
+  | jq -e 'any(.name == "quota")'
+
+# Exercise the installed upstream hook without inference or provider credentials.
+session=$(curl --fail --silent --show-error --user "opencode:$password" \
+  -H 'Content-Type: application/json' -d '{}' "$url/session" | jq -r .id)
+curl --fail --silent --show-error --max-time 120 --user "opencode:$password" \
+  -H 'Content-Type: application/json' \
+  -d '{"noReply":true,"model":{"providerID":"auto-router","modelID":"quality"},"parts":[{"type":"text","text":"hello"}]}' \
+  "$url/session/$session/message" \
+  | jq -e '.info.model == {"providerID":"google","modelID":"gemini-3.8-flash"}'
+curl --fail --silent --show-error --user "opencode:$password" \
+  -X DELETE "$url/session/$session"
 
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
