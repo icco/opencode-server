@@ -15,13 +15,17 @@ fi
 mkdir -p "$XDG_CONFIG_HOME/opencode" "$XDG_CONFIG_HOME/gh" "$XDG_DATA_HOME/opencode" \
   "$XDG_STATE_HOME/opencode" "$XDG_CACHE_HOME/opencode" "$HOME/workspace"
 
-# The upstream router discovers config under HOME, not beside OPENCODE_CONFIG.
-# Seed once so persistent user overrides (including JSONC) survive image updates.
-router_config="$HOME/.config/opencode"
-mkdir -p "$router_config"
-if [ ! -e "$router_config/opencode-auto-router.json" ] && \
-   [ ! -e "$router_config/opencode-auto-router.jsonc" ]; then
-  cp /etc/opencode/opencode-auto-router.json "$router_config/opencode-auto-router.json"
+# OpenCode V2 fixes the HTTP username to opencode.
+if [ "${OPENCODE_SERVER_USERNAME:-opencode}" != opencode ]; then
+  echo "OpenCode V2 requires username opencode; remove OPENCODE_SERVER_USERNAME" >&2
+  exit 1
+fi
+export OPENCODE_PASSWORD="$OPENCODE_SERVER_PASSWORD"
+
+# Seed the upstream policy once, preserving persistent user overrides.
+if [ ! -e "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" ] && \
+   [ ! -e "$XDG_CONFIG_HOME/opencode/orchestra.json" ]; then
+  cp /etc/opencode/orchestra.jsonc "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
 fi
 
 # Use gh credentials for HTTPS Git operations, including before the first login.

@@ -1,6 +1,6 @@
 # OpenCode Server
 
-Self-hosted [OpenCode](https://opencode.ai) web UI and API with Gemini, GitHub
+Self-hosted [OpenCode V2](https://opencode.ai/v2/docs) web UI and API with Gemini, GitHub
 Copilot, and WakaTime. Image: `ghcr.io/icco/opencode-server:main` (amd64/arm64).
 
 ## Quick start
@@ -37,11 +37,11 @@ permissions, and add required hosts to `known_hosts` on the host.
 
 ## Connect providers
 
-Connect both providers, then restart. The default model is **Auto Router (quality-first)**:
+Connect both providers through the Web UI or the running server:
 
 ```sh
-docker compose exec opencode opencode auth login
-docker compose restart opencode
+docker compose exec opencode opencode auth login github-copilot --server http://127.0.0.1:4096
+docker compose exec opencode opencode auth login google --server http://127.0.0.1:4096
 ```
 
 - **Copilot:** choose GitHub Copilot and complete device login. Requires a subscription.
@@ -61,38 +61,35 @@ For [WakaTime](https://github.com/angristan/opencode-wakatime), create
 api_key = <your key from https://wakatime.com/api-key>
 ```
 
-## Automatic model routing
+## Specialist routing and quota
 
-[`opencode-auto-router`](https://github.com/leecoder/opencode-auto-router) selects
-a model by prompt complexity without an LLM call. Choose **Auto Router
-(quality-first)** in Build or Plan; choose a real model to bypass routing.
-Existing sessions may need to select it explicitly. API clients must send
-`model: { providerID: "auto-router", modelID: "quality" }` on each routed turn.
+[`Orchestra`](https://github.com/Oeronteros/opencode-orchestra) runs quality-first
+specialist workflows. Use `/orchestra <task>` or the default **orch-lead** agent;
+choose **Build** or **Plan** for the normal single-agent workflow.
 
-The editable preferences in [`opencode-auto-router.json`](opencode-auto-router.json):
-
-| Tier | First preference | Ordered fallbacks |
-| --- | --- | --- |
-| SIMPLE | Gemini 3.8 Flash | GPT-5.4 Mini, Claude Sonnet 5 |
-| MEDIUM | GPT-6 Astra | Claude Sonnet 5, Gemini 3.1 Pro Preview |
-| COMPLEX / REASONING | Claude Opus 5.5 | GPT-6 Astra, Gemini 3.1 Pro Preview |
-
-Model failures, including quota errors, advance the chain **on the next retry in
-the same session and tier**. Success resets it; exhausting it returns to the
-primary. Auth/context errors do not advance it. Configure models your accounts
-can use: the router does not pre-check availability or context compatibility.
-Internal title/summary and compaction requests use fixed Copilot models.
+[`orchestra.jsonc`](orchestra.jsonc) assigns GPT-6 Astra to the lead/tests/merge,
+Sonnet 5 to repository exploration, Gemini to docs/research, and Opus 5.5 to
+review/security/judging. Subagents have ordered fallback chains; the lead uses
+OpenCode's native request path. Two workers run concurrently, with eight total.
 
 **Quota reporting is separate from routing.**
-[`OpenCode Quota`](https://github.com/slkiser/opencode-quota) provides `/quota` and
+The V2 [`Cardinal quota fork`](https://github.com/cardin/opencode-quota) provides `/quota` and
 `/quota_status`; remaining balances do not influence selection. Proactive
 quota-threshold routing still needs upstream integration. Gemini Code Assist
 quota requires [organization setup](https://github.com/slkiser/opencode-quota/blob/main/docs/readme/providers.md#gemini-cli).
 
-The server seeds its policy at `/data/.config/opencode/opencode-auto-router.json`
-once. Edit or bind-mount that file; existing JSON/JSONC policies survive updates.
-Working-directory policies take precedence (the server's directory, not each API
-request's directory). Restart after edits: `docker compose restart opencode`.
+The server seeds `/data/.config/opencode/orchestra.jsonc` once and preserves it.
+Project `.opencode/orchestra.jsonc` overrides it. Restart after edits. Agent prompts
+and default model assignments are generated from upstream during the image build;
+override an agent's model in `opencode.json` when changing its default selection.
+
+### Upgrading from V1
+
+Back up `/data` before first V2 startup; V2 migrates legacy data. The old per-turn
+router is replaced by specialist delegation, and its policy file is no longer used.
+Select **orch-lead** and a real model in existing sessions. V2 fixes the login name
+to `opencode`, uses `/api/*` endpoints, and has a new plugin/config API. Migrate
+custom config mounts and plugins using the [V2 docs](https://opencode.ai/v2/docs).
 
 ## Public hosting
 
@@ -116,7 +113,7 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
 
 ## Configuration and development
 
-- Includes Go, TypeScript, pnpm 10.34.5, and common shell tools; see [`Dockerfile`](Dockerfile).
+- Includes Go, TypeScript, pnpm 12.6.0, and common shell tools; see [`Dockerfile`](Dockerfile).
   Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
 - Defaults live in [`opencode.json`](opencode.json), loaded at
   `/etc/opencode/opencode.json`. Mount a replacement there read-only to customize.
@@ -134,6 +131,6 @@ bash scripts/smoke-test.sh opencode-server
 gh attestation verify oci://ghcr.io/icco/opencode-server:main --owner icco
 ```
 
-The integration check needs OpenCode and connected providers; it uses port 4197
+The integration check needs OpenCode V2; it uses isolated data on port 4197
 (`ROUTER_TEST_PORT` overrides) and requests no inference. Image smoke tests need
 Docker, Bash, curl, jq, OpenSSL, and `timeout`.

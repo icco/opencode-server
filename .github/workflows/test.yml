@@ -20,8 +20,8 @@ jobs:
           bash -n scripts/smoke-test.sh
           shellcheck entrypoint.sh healthcheck.sh scripts/smoke-test.sh
       - name: Set up pnpm
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
-      - name: Test model routing
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Validate V2 configuration and upstream routing
         run: |
           pnpm install --frozen-lockfile --ignore-scripts --no-optional
           pnpm test
@@ -29,34 +29,3 @@ jobs:
         env:
           OPENCODE_SERVER_PASSWORD: validation-only-not-a-deployment-password
         run: docker compose config --quiet
-      - name: Validate OpenCode configuration
-        run: |
-          python -m pip install jsonschema==4.26.0
-          curl --fail --silent --show-error --location https://opencode.ai/config.json -o "$RUNNER_TEMP/opencode-schema.json"
-          curl --fail --silent --show-error --location https://models.dev/model-schema.json -o "$RUNNER_TEMP/model-schema.json"
-          python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          from jsonschema import Draft202012Validator
-          from referencing import Registry, Resource
-
-          schema = json.loads((Path(os.environ["RUNNER_TEMP"]) / "opencode-schema.json").read_text())
-          config = json.loads(Path("opencode.json").read_text())
-          model_url = "https://models.dev/model-schema.json"
-          models = json.loads((Path(os.environ["RUNNER_TEMP"]) / "model-schema.json").read_text())
-          # The published catalog cannot contain locally declared virtual models.
-          # Extend only with IDs explicitly defined under provider.models; retain
-          # catalog validation for other model references and all config fields.
-          models["$defs"]["Model"]["enum"].extend(
-              f"{provider}/{model}"
-              for provider, definition in config.get("provider", {}).items()
-              for model in definition.get("models", {})
-          )
-          registry = Registry().with_resource(model_url, Resource.from_contents(models))
-          errors = list(Draft202012Validator(schema, registry=registry).iter_errors(config))
-          for error in errors:
-              print(f"{error.json_path}: {error.message[:300]}")
-          if errors:
-              raise SystemExit(1)
-          PY

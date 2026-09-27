@@ -3,4 +3,8 @@
 !entrypoint.sh
 !healthcheck.sh
 !opencode.json
-!opencode-auto-router.json
+!orchestra.jsonc
+!package.json
+!pnpm-lock.yaml
+!scripts/
+!scripts/build-config.mjs

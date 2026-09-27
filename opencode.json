@@ -1,61 +1,102 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "autoupdate": false,
-  "model": "auto-router/quality",
-  "small_model": "github-copilot/gpt-5.4-mini",
-  "agent": {
+  "update": "disable",
+  "model": "github-copilot/gpt-6-astra",
+  "default_agent": "orch-lead",
+  "agents": {
+    "title": {
+      "model": "github-copilot/gpt-5.4-mini"
+    },
     "compaction": {
       "model": "github-copilot/gpt-6-astra"
+    },
+    "orch-lead": {
+      "mode": "primary"
+    },
+    "orch-repo": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-docs": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-tests": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-research": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-critic": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-security": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-visual-reference": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-visual-generate": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-visual-review": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-editor": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-integrator": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-merge": {
+      "mode": "subagent",
+      "hidden": true
+    },
+    "orch-judge": {
+      "mode": "subagent",
+      "hidden": true
     }
   },
-  "enabled_providers": [
-    "google",
-    "github-copilot",
-    "auto-router"
+  "plugins": [
+    "opencode-gemini-auth@2.0.1",
+    "opencode-wakatime@1.4.0",
+    "@oeronteros-1/opencode-orchestra@3.0.4",
+    "@cardinal4/opencode-quota@5.1.0"
   ],
-  "plugin": [
-    "opencode-gemini-auth@1.4.15",
-    "opencode-wakatime@1.3.9",
-    "opencode-auto-router@0.1.4",
-    "@slkiser/opencode-quota@4.10.5"
-  ],
-  "provider": {
-    "auto-router": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Local task router",
-      "models": {
-        "quality": {
-          "name": "Auto Router (quality-first)",
-          "tool_call": true,
-          "limit": {
-            "context": 128000,
-            "output": 16000
-          },
-          "modalities": {
-            "input": [
-              "text",
-              "image"
-            ],
-            "output": [
-              "text"
-            ]
-          }
-        }
+  "experimental": {
+    "policies": [
+      {
+        "action": "provider.use",
+        "resource": "*",
+        "effect": "deny"
+      },
+      {
+        "action": "provider.use",
+        "resource": "google",
+        "effect": "allow"
+      },
+      {
+        "action": "provider.use",
+        "resource": "github-copilot",
+        "effect": "allow"
       }
-    }
+    ]
   },
-  "instructions": [
-    "instructions.md"
-  ],
-  "lsp": true,
-  "compaction": {
-    "auto": true,
-    "prune": true,
-    "reserved": 10000
-  },
-  "mcp": {
-    "lunchmoney": {
-      "enabled": false
+  "share": "disabled",
+  "permissions": [
+    {
+      "action": "*",
+      "resource": "*",
+      "effect": "allow"
     }
-  }
+  ]
 }

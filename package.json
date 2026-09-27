@@ -2,12 +2,14 @@
   "name": "opencode-server-config-tests",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.34.5",
+  "packageManager": "pnpm@12.6.0",
   "scripts": {
     "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
-    "@opencode-ai/plugin": "1.18.31",
-    "opencode-auto-router": "0.1.4"
+    "@opencode/plugin": "2.0.18",
+    "@opencode/schema": "2.0.18",
+    "@oeronteros-1/opencode-orchestra": "3.0.4",
+    "effect": "4.0.0-rc.112"
   }
 }

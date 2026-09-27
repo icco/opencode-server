@@ -11,7 +11,7 @@ docker run --rm --entrypoint sh "$image" -ec '
     wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm; do
     command -v "$tool"
   done
-  test "$(pnpm --version)" = 10.34.5
+  test "$(pnpm --version)" = 12.6.0
   opencode --version
   tsc --version
   test -w "$(dirname "$PNPM_HOME")"
@@ -49,7 +49,12 @@ docker run -d --name "$name" \
   -p 127.0.0.1::4096 \
   -e "OPENCODE_SERVER_PASSWORD=$password" \
   "$image"
-trap 'docker logs "$name"; docker rm -f "$name"' EXIT
+cleanup() {
+  docker logs "$name"
+  docker exec "$name" sh -c 'for log in "$XDG_DATA_HOME"/opencode/log/*.log; do [ ! -f "$log" ] || cat "$log"; done' || true
+  docker rm -f "$name"
+}
+trap cleanup EXIT
 port=$(docker port "$name" 4096/tcp | cut -d: -f2)
 url="http://127.0.0.1:$port"
 
@@ -61,42 +66,16 @@ for attempt in $(seq 1 60); do
   sleep 3
 done
 docker exec "$name" /usr/local/bin/healthcheck.sh
-for path in / /provider/auth; do
+for path in /api/info /api/integration; do
   test "$(curl -s -o /dev/null -w '%{http_code}' "$url$path")" = 401
   test "$(curl -s -o /dev/null -w '%{http_code}' --user opencode:wrong-password "$url$path")" = 401
 done
 
-curl --fail --silent --show-error --max-time 120 \
-  --user "opencode:$password" "$url/provider/auth" \
-  | jq -e '.google | any(.label == "OAuth with Google (Gemini CLI)")'
-curl --fail --silent --show-error --max-time 120 \
-  --user "opencode:$password" "$url/provider/auth" \
-  | jq -e '.["github-copilot"] | any(.type == "oauth")'
-curl --fail --silent --show-error --max-time 120 \
-  --user "opencode:$password" "$url/config" \
-  | jq -e '.plugin | any(contains("opencode-wakatime"))'
-curl --fail --silent --show-error --max-time 120 \
-  --user "opencode:$password" "$url/config" \
-  | jq -e '.model == "auto-router/quality" and
-    (.plugin | any(contains("opencode-auto-router"))) and
-    (.plugin | any(contains("@slkiser/opencode-quota")))'
 docker exec "$name" sh -ec '
-  cmp /etc/opencode/opencode-auto-router.json "$HOME/.config/opencode/opencode-auto-router.json"
+  cmp /etc/opencode/orchestra.jsonc "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
 '
-curl --fail --silent --show-error --max-time 120 \
-  --user "opencode:$password" "$url/command" \
-  | jq -e 'any(.name == "quota")'
-
-# Exercise the installed upstream hook without inference or provider credentials.
-session=$(curl --fail --silent --show-error --user "opencode:$password" \
-  -H 'Content-Type: application/json' -d '{}' "$url/session" | jq -r .id)
-curl --fail --silent --show-error --max-time 120 --user "opencode:$password" \
-  -H 'Content-Type: application/json' \
-  -d '{"noReply":true,"model":{"providerID":"auto-router","modelID":"quality"},"parts":[{"type":"text","text":"hello"}]}' \
-  "$url/session/$session/message" \
-  | jq -e '.info.model == {"providerID":"google","modelID":"gemini-3.8-flash"}'
-curl --fail --silent --show-error --user "opencode:$password" \
-  -X DELETE "$url/session/$session"
+OPENCODE_TEST_URL="$url" OPENCODE_SERVER_PASSWORD="$password" \
+  node scripts/test-router-integration.mjs
 
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'

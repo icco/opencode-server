@@ -13,7 +13,6 @@ services:
     environment:
       GH_TOKEN: ${GH_TOKEN:-}
       OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Set OPENCODE_SERVER_PASSWORD in .env}
-      OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:-opencode}
     ports:
       - 127.0.0.1:4096:4096
     volumes:
