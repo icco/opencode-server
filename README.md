@@ -21,28 +21,19 @@ Back it up. Host bind mounts must be writable by UID/GID 1000.
 
 ## GitHub CLI and Git access
 
-The image includes `gh` and configures it as Git's HTTPS credential helper.
-Authenticate once using device login:
+Authenticate `gh` once for HTTPS Git access (separate from Copilot login):
 
 ```sh
 docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web
 docker compose exec opencode gh auth status
-docker compose exec opencode gh api user --jq .login
 ```
 
-GitHub CLI credentials live in `/data/.config/gh` and survive container updates.
-This login is separate from the GitHub Copilot provider login below.
+Credentials persist in `/data/.config/gh`. For automation, set `GH_TOKEN` in the
+untracked `.env` file and recreate the container; it overrides stored logins.
 
-For automated hosting, set `GH_TOKEN` in the untracked `.env` file, then run
-`docker compose up -d --force-recreate opencode`. The token takes precedence over
-stored logins and needs access to the repositories and operations you intend to
-use. Keep it out of the image and tracked configuration.
-
-Compose also mounts the host's `${HOME}/.ssh` at `/data/.ssh` read-only for SSH
-Git remotes. The host directory must exist, with keys readable by UID 1000 and
-permissions accepted by OpenSSH. Add required host keys to the host's
-`known_hosts` before use; the container cannot update the read-only mount.
-SSH remotes use those keys; HTTPS remotes use the `gh` credential helper.
+SSH remotes use the host's `${HOME}/.ssh`, mounted read-only at `/data/.ssh`.
+Create it before startup, make keys readable by UID 1000 with SSH-compatible
+permissions, and add required hosts to `known_hosts` on the host.
 
 ## Connect providers
 
@@ -72,16 +63,13 @@ api_key = <your key from https://wakatime.com/api-key>
 
 ## Automatic model routing
 
-Routing uses the MIT-licensed upstream
-[`opencode-auto-router@0.1.4`](https://github.com/leecoder/opencode-auto-router).
-Select **Auto Router (quality-first)** (`auto-router/quality`) in the model picker
-to enable it with either Build or Plan. Select a real model to bypass routing.
-Existing sessions may retain their previous model selection. API clients should
-send `model: { providerID: "auto-router", modelID: "quality" }` on each routed turn;
-otherwise OpenCode may reuse the actual model saved on the previous message.
+[`opencode-auto-router`](https://github.com/leecoder/opencode-auto-router) selects
+a model by prompt complexity without an LLM call. Choose **Auto Router
+(quality-first)** in Build or Plan; choose a real model to bypass routing.
+Existing sessions may need to select it explicitly. API clients must send
+`model: { providerID: "auto-router", modelID: "quality" }` on each routed turn.
 
-The local heuristic classifier scores each prompt and selects a tier without an
-LLM call. [`opencode-auto-router.json`](opencode-auto-router.json) configures:
+The editable preferences in [`opencode-auto-router.json`](opencode-auto-router.json):
 
 | Tier | First preference | Ordered fallbacks |
 | --- | --- | --- |
@@ -89,79 +77,22 @@ LLM call. [`opencode-auto-router.json`](opencode-auto-router.json) configures:
 | MEDIUM | GPT-6 Astra | Claude Sonnet 5, Gemini 3.1 Pro Preview |
 | COMPLEX / REASONING | Claude Opus 5.5 | GPT-6 Astra, Gemini 3.1 Pro Preview |
 
-These are quality-first preferences, not benchmark rankings. The upstream
-classifier supports keyword, weight, and tier-boundary overrides. This deployment
-uses its default heuristic; optional BERT and Apple classifiers are not enabled.
-Short prompts can classify as SIMPLE even when the underlying job is substantial;
-choose a real model explicitly when needed.
+Model failures, including quota errors, advance the chain **on the next retry in
+the same session and tier**. Success resets it; exhausting it returns to the
+primary. Auth/context errors do not advance it. Configure models your accounts
+can use: the router does not pre-check availability or context compatibility.
+Internal title/summary and compaction requests use fixed Copilot models.
 
-On a model-failure event (including quota/rate-limit API errors), the upstream
-router advances to the next model **on the next retry in the same session and
-tier**. It does not replay the current turn. Successful completion clears the
-failure state; exhausting the chain returns to its primary. Auth, context-overflow,
-output-length, and abort errors do not advance the chain. Model availability and
-context/modality suitability are not proactively filtered: configure models your
-accounts can use, and keep the tier models suitable for the workload.
+**Quota reporting is separate from routing.**
+[`OpenCode Quota`](https://github.com/slkiser/opencode-quota) provides `/quota` and
+`/quota_status`; remaining balances do not influence selection. Proactive
+quota-threshold routing still needs upstream integration. Gemini Code Assist
+quota requires [organization setup](https://github.com/slkiser/opencode-quota/blob/main/docs/readme/providers.md#gemini-cli).
 
-Internal title/summary requests use `github-copilot/gpt-5.4-mini`; compaction uses
-`github-copilot/gpt-6-astra`, avoiding requests to the virtual router provider.
-These internal requests are not automatically routed or failed over.
-
-### Quota reporting and the remaining integration gap
-
-[`@slkiser/opencode-quota@4.10.5`](https://github.com/slkiser/opencode-quota)
-(MIT) supplies `/quota` and `/quota_status` in the Web UI. The 4.x release line
-supports OpenCode 1.x. Copilot usage is detected from the existing login;
-organization-backed Gemini CLI quota requires the upstream
-[provider setup](https://github.com/slkiser/opencode-quota/blob/main/docs/readme/providers.md#gemini-cli).
-Gemini API-key access does not imply a readable Code Assist quota balance.
-
-**Remaining balances do not drive routing in this setup.** The router reacts to
-failures; the quota plugin reports usage independently. Proactive selection at a
-quota threshold requires an upstream integration. OpenCode Quota provides
-`show --json` and an optional export file as supported integration surfaces, but
-neither is consumed by the router. Missing quota data is not a claim of unlimited
-capacity. See the upstream [external integration guide](https://github.com/slkiser/opencode-quota/blob/main/docs/readme/external-integration.md).
-
-### Configuration and deployment
-
-On first startup the entrypoint copies the bundled router policy to
-`/data/.config/opencode/opencode-auto-router.json`. Existing JSON or JSONC policies
-are preserved across image updates. Edit that file, or mount a policy directly:
-
-```yaml
-services:
-  opencode:
-    volumes:
-      - ./opencode-auto-router.json:/data/.config/opencode/opencode-auto-router.json:ro
-```
-
-Upstream also searches the server process working directory and its `.opencode/`
-directory before the home config. It uses the process directory, not the directory
-parameter of each API request. For this multi-workspace server, use the home policy
-as the server-wide default. Quota settings can be placed in
-`/data/.config/opencode/opencode-quota/quota-toast.json` using the upstream guide.
-
-Build/deploy the updated image to install the plugins. Quit and restart OpenCode
-after configuration or policy changes (`docker compose restart opencode` for this
-server). A Compose mount change requires `docker compose up -d --force-recreate opencode`.
-
-Run the configuration contract tests against the pinned upstream router:
-
-```sh
-pnpm install --frozen-lockfile --ignore-scripts --no-optional
-pnpm test
-```
-
-For a local integration check with OpenCode installed and providers connected:
-
-```sh
-node scripts/test-router-integration.mjs
-```
-
-This starts a separate loopback server on port 4197 (`ROUTER_TEST_PORT` overrides
-it), checks routing with `noReply` messages, and deletes its test session. It can
-query model catalogs and quota but requests no inference.
+The server seeds its policy at `/data/.config/opencode/opencode-auto-router.json`
+once. Edit or bind-mount that file; existing JSON/JSONC policies survive updates.
+Working-directory policies take precedence (the server's directory, not each API
+request's directory). Restart after edits: `docker compose restart opencode`.
 
 ## Public hosting
 
@@ -185,18 +116,8 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
 
 ## Configuration and development
 
-- The image includes Go (`go`, `gofmt`) and TypeScript (`tsc`). Go-installed tools
-  in `/data/go/bin` are on `PATH`; Go modules and build caches persist under `/data`.
-- pnpm 10.34.5 is installed in the image and pinned in `package.json` for local
-  development and CI. Runtime global installs use `/data/.local/share/pnpm`.
-- Script and shell tools include:
-  - Search/navigation: `ag`, `rg`, `fd` (also available as `fdfind`), `fzf`, `tree`,
-    and `zoxide`.
-  - Data/text processing: `jq`, Mike Farah's `yq` v4 (`eval-all`/`ireduce`
-    compatible), `sponge` (from `moreutils`), and `envsubst`.
-  - Files/transfers: `file`, `rsync`, `wget`, `zip`, `unzip`, and `xz`.
-  - Shell/development: `zsh`, Bash completion, `shellcheck`, `git-lfs`, `less`,
-    `tmux`, `vim`, `openssl`, and procps tools (`ps`, `pgrep`, `watch`).
+- Includes Go, TypeScript, pnpm 10.34.5, and common shell tools; see [`Dockerfile`](Dockerfile).
+  Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
 - Defaults live in [`opencode.json`](opencode.json), loaded at
   `/etc/opencode/opencode.json`. Mount a replacement there read-only to customize.
 - Restart OpenCode after config changes. After environment/password changes, run
@@ -205,9 +126,14 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
   architectures and publishes `main` with provenance attestations.
 
 ```sh
+pnpm install --frozen-lockfile --ignore-scripts --no-optional
+pnpm test
+node scripts/test-router-integration.mjs
 docker build -t opencode-server .
 bash scripts/smoke-test.sh opencode-server
 gh attestation verify oci://ghcr.io/icco/opencode-server:main --owner icco
 ```
 
-Local smoke tests require Docker, Bash, curl, jq, OpenSSL, and `timeout`.
+The integration check needs OpenCode and connected providers; it uses port 4197
+(`ROUTER_TEST_PORT` overrides) and requests no inference. Image smoke tests need
+Docker, Bash, curl, jq, OpenSSL, and `timeout`.
