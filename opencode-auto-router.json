@@ -1,0 +1,29 @@
+{
+  "enabled": true,
+  "notify": true,
+  "routers": [
+    {
+      "name": "quality",
+      "classifiers": ["heuristic"],
+      "pinSession": false,
+      "tierModels": {
+        "SIMPLE": {
+          "model": "google/gemini-3.8-flash",
+          "fallbacks": ["github-copilot/gpt-5.4-mini", "github-copilot/claude-sonnet-5"]
+        },
+        "MEDIUM": {
+          "model": "github-copilot/gpt-6-astra",
+          "fallbacks": ["github-copilot/claude-sonnet-5", "google/gemini-3.1-pro-preview"]
+        },
+        "COMPLEX": {
+          "model": "github-copilot/claude-opus-5.5",
+          "fallbacks": ["github-copilot/gpt-6-astra", "google/gemini-3.1-pro-preview"]
+        },
+        "REASONING": {
+          "model": "github-copilot/claude-opus-5.5",
+          "fallbacks": ["github-copilot/gpt-6-astra", "google/gemini-3.1-pro-preview"]
+        }
+      }
+    }
+  ]
+}

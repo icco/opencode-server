@@ -3,7 +3,6 @@ import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 
 const password = randomBytes(32).toString("hex");
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -35,18 +34,17 @@ try {
     }
   }
   const config = await request("/config");
-  assert.equal(config.default_agent, "auto");
+  assert.equal(config.model, "auto-router/quality");
+  const commands = await request("/command");
+  assert.ok(commands.some((command) => command.name === "quota"), "upstream quota commands registered");
   session = await request("/session", { title: "Model-router no-inference integration test" });
   const message = await request(`/session/${session.id}/message`, {
-    agent: "auto", noReply: true,
-    model: { providerID: "google", modelID: "gemini-flash-latest" },
-    parts: [{ type: "text", text: "Design a database migration and review its security" }],
+    agent: "build", noReply: true,
+    model: { providerID: "auto-router", modelID: "quality" },
+    parts: [{ type: "text", text: "Think carefully, weigh the options, and evaluate the architecture." }],
   });
-  assert.equal(message.info.agent, "auto");
-  assert.ok(message.info.model.modelID);
-  const policy = JSON.parse(await readFile(new URL("../model-routing.json", import.meta.url)));
-  assert.ok([...policy.rules.flatMap((rule) => rule.models), ...policy.defaultModels]
-    .includes(`${message.info.model.providerID}/${message.info.model.modelID}`));
+  assert.equal(message.info.agent, "build");
+  assert.deepEqual(message.info.model, { providerID: "github-copilot", modelID: "claude-opus-5.5" });
   console.log("Live hook selected:", message.info.model.providerID, message.info.model.modelID);
   const history = await request(`/session/${session.id}/message`);
   assert.equal(history.length, 1);
@@ -56,6 +54,11 @@ try {
     parts: [{ type: "text", text: "Design a database migration" }],
   });
   assert.deepEqual(manual.info.model, message.info.model);
+  const simple = await request(`/session/${session.id}/message`, {
+    agent: "build", noReply: true, model: { providerID: "auto-router", modelID: "quality" },
+    parts: [{ type: "text", text: "hello" }],
+  });
+  assert.deepEqual(simple.info.model, { providerID: "google", modelID: "gemini-3.8-flash" });
   console.log("Manual selection preserved; no model inference requested.");
 } finally {
   if (session) await request(`/session/${session.id}`, undefined, "DELETE").catch(() => {});

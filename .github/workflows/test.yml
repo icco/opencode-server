@@ -20,7 +20,9 @@ jobs:
           bash -n scripts/smoke-test.sh
           shellcheck entrypoint.sh healthcheck.sh scripts/smoke-test.sh
       - name: Test model routing
-        run: node --test tests/*.test.mjs
+        run: |
+          npm ci --ignore-scripts --omit=optional
+          npm test
       - name: Validate Compose
         env:
           OPENCODE_SERVER_PASSWORD: validation-only-not-a-deployment-password

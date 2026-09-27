@@ -36,8 +36,7 @@ ENV HOME=/data \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 COPY opencode.json /etc/opencode/opencode.json
-COPY model-routing.json /etc/opencode/model-routing.json
-COPY plugins/ /etc/opencode/plugins/
+COPY opencode-auto-router.json /etc/opencode/opencode-auto-router.json
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode \
     && usermod --home /data node \

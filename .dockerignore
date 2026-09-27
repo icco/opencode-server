@@ -3,6 +3,4 @@
 !entrypoint.sh
 !healthcheck.sh
 !opencode.json
-!model-routing.json
-!plugins/
-!plugins/**
+!opencode-auto-router.json

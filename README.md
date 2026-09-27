@@ -46,7 +46,7 @@ SSH remotes use those keys; HTTPS remotes use the `gh` credential helper.
 
 ## Connect providers
 
-Run for each provider, then restart. New sessions default to the **auto** agent:
+Connect both providers, then restart. The default model is **Auto Router (quality-first)**:
 
 ```sh
 docker compose exec opencode opencode auth login
@@ -72,75 +72,85 @@ api_key = <your key from https://wakatime.com/api-key>
 
 ## Automatic model routing
 
-The default **auto** agent uses a local plugin to select a model before each user
-turn. Existing sessions can opt in by selecting **auto** in the agent picker.
-Choose **build** or **plan** to use OpenCode's normal manual model selection.
-The model picker is overridden while using **auto**; the assistant message records
-the actual model used, and OpenCode logs the routing rule, model, and quota fraction.
+Routing uses the MIT-licensed upstream
+[`opencode-auto-router@0.1.4`](https://github.com/leecoder/opencode-auto-router).
+Select **Auto Router (quality-first)** (`auto-router/quality`) in the model picker
+to enable it with either Build or Plan. Select a real model to bypass routing.
+Existing sessions may retain their previous model selection. API clients should
+send `model: { providerID: "auto-router", modelID: "quality" }` on each routed turn;
+otherwise OpenCode may reuse the actual model saved on the previous message.
 
-Edit [`model-routing.json`](model-routing.json) to change the ordered preferences:
+The local heuristic classifier scores each prompt and selects a tier without an
+LLM call. [`opencode-auto-router.json`](opencode-auto-router.json) configures:
 
-| Task | First preference | Fallbacks |
+| Tier | First preference | Ordered fallbacks |
 | --- | --- | --- |
-| Design, debugging, security, reviews, migrations | Copilot Claude Opus 5.5 | GPT-6 Astra, Opus 5, Gemini Pro, general list |
-| Short standalone summaries, explanations, typo fixes, renames | Gemini 3.8 Flash | Claude Sonnet 5, GPT-5.4 Mini, general list |
-| General implementation and other work | Copilot GPT-6 Astra | Opus 5.5, Sonnet 5, Gemini Pro, Gemini Flash |
+| SIMPLE | Gemini 3.8 Flash | GPT-5.4 Mini, Claude Sonnet 5 |
+| MEDIUM | GPT-6 Astra | Claude Sonnet 5, Gemini 3.1 Pro Preview |
+| COMPLEX / REASONING | Claude Opus 5.5 | GPT-6 Astra, Gemini 3.1 Pro Preview |
 
-These are editable preferences, not a benchmark-based quality assessment. Rules
-are case-insensitive regular expressions, evaluated in order. Follow-up prompts
-include the previous user prompt for classification; the simple-work rule applies
-only to the first turn. Routing itself makes no LLM calls. New model releases must
-be added to the lists explicitly.
+These are quality-first preferences, not benchmark rankings. The upstream
+classifier supports keyword, weight, and tier-boundary overrides. This deployment
+uses its default heuristic; optional BERT and Apple classifiers are not enabled.
+Short prompts can classify as SIMPLE even when the underlying job is substantial;
+choose a real model explicitly when needed.
 
-The router filters against connected providers, their current model catalogs,
-tool support, attachment modalities, and an estimated context budget. Candidates
-are ranked in three tiers: known quota above the reserve, unknown quota, then low
-but nonzero quota. Quality order is preserved within each tier. The default reserve
-is 10%; depleted or cooling-down candidates are skipped. If no candidate qualifies,
-Auto returns an error explaining how to proceed.
+On a model-failure event (including quota/rate-limit API errors), the upstream
+router advances to the next model **on the next retry in the same session and
+tier**. It does not replay the current turn. Successful completion clears the
+failure state; exhausting the chain returns to its primary. Auth, context-overflow,
+output-length, and abort errors do not advance the chain. Model availability and
+context/modality suitability are not proactively filtered: configure models your
+accounts can use, and keep the tier models suitable for the workload.
 
-### Quota sources and limitations
+Internal title/summary requests use `github-copilot/gpt-5.4-mini`; compaction uses
+`github-copilot/gpt-6-astra`, avoiding requests to the virtual router provider.
+These internal requests are not automatically routed or failed over.
 
-- **Copilot:** best-effort lookup of GitHub's internal subscription quota endpoint
-  using the existing Copilot login. Premium/chat buckets are treated conservatively
-  as provider-wide limits; this does not infer per-model request multipliers or
-  paid overage. Enterprise quota is unknown.
-- **Gemini Code Assist OAuth:** model-specific `retrieveUserQuota` buckets using
-  the existing unexpired access token and project ID. Set
-  `OPENCODE_GEMINI_PROJECT_ID` or use a project recorded by the Gemini auth plugin.
-  Token refresh remains the auth plugin's responsibility; an expired token means
-  quota is temporarily unknown.
-- **Gemini API keys**, missing buckets, failed lookups, and unsupported response
-  formats produce **unknown**, never an invented remaining balance. Some accounts
-  return no buckets. Unknown quota is allowed by default; set `unknownQuota` to
-  `"deny"` for strict routing using only reported balances.
-- Lookups are cached for 60 seconds per OpenCode workspace instance, with a
-  five-second timeout. They are advisory: concurrent usage can consume quota
-  between lookup and inference.
-- HTTP 402, 429, and 503 errors put the affected model on a five-minute cooldown,
-  extended by `Retry-After` when present. Send another prompt (for example,
-  “continue”) to select a fallback. The plugin does not switch mid-turn or replay
-  tool actions. Cooldowns are in memory and reset on restart.
-- Internal title/compaction requests and other agents retain OpenCode's normal
-  model handling. This is turn-level routing for the agents listed in the policy.
+### Quota reporting and the remaining integration gap
 
-To override the policy in a deployed container, add a read-only bind mount:
+[`@slkiser/opencode-quota@4.10.5`](https://github.com/slkiser/opencode-quota)
+(MIT) supplies `/quota` and `/quota_status` in the Web UI. The 4.x release line
+supports OpenCode 1.x. Copilot usage is detected from the existing login;
+organization-backed Gemini CLI quota requires the upstream
+[provider setup](https://github.com/slkiser/opencode-quota/blob/main/docs/readme/providers.md#gemini-cli).
+Gemini API-key access does not imply a readable Code Assist quota balance.
+
+**Remaining balances do not drive routing in this setup.** The router reacts to
+failures; the quota plugin reports usage independently. Proactive selection at a
+quota threshold requires an upstream integration. OpenCode Quota provides
+`show --json` and an optional export file as supported integration surfaces, but
+neither is consumed by the router. Missing quota data is not a claim of unlimited
+capacity. See the upstream [external integration guide](https://github.com/slkiser/opencode-quota/blob/main/docs/readme/external-integration.md).
+
+### Configuration and deployment
+
+On first startup the entrypoint copies the bundled router policy to
+`/data/.config/opencode/opencode-auto-router.json`. Existing JSON or JSONC policies
+are preserved across image updates. Edit that file, or mount a policy directly:
 
 ```yaml
 services:
   opencode:
     volumes:
-      - ./model-routing.json:/etc/opencode/model-routing.json:ro
+      - ./opencode-auto-router.json:/data/.config/opencode/opencode-auto-router.json:ro
 ```
 
-Build/deploy the updated image to install the plugin. Quit and restart OpenCode
+Upstream also searches the server process working directory and its `.opencode/`
+directory before the home config. It uses the process directory, not the directory
+parameter of each API request. For this multi-workspace server, use the home policy
+as the server-wide default. Quota settings can be placed in
+`/data/.config/opencode/opencode-quota/quota-toast.json` using the upstream guide.
+
+Build/deploy the updated image to install the plugins. Quit and restart OpenCode
 after configuration or policy changes (`docker compose restart opencode` for this
 server). A Compose mount change requires `docker compose up -d --force-recreate opencode`.
 
-Run the policy and hook tests without provider requests:
+Run the configuration contract tests against the pinned upstream router:
 
 ```sh
-node --test tests/*.test.mjs
+npm ci --ignore-scripts --omit=optional
+npm test
 ```
 
 For a local integration check with OpenCode installed and providers connected:

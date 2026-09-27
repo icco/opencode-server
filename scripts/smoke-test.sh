@@ -73,12 +73,26 @@ curl --fail --silent --show-error --max-time 120 \
   | jq -e '.plugin | any(contains("opencode-wakatime"))'
 curl --fail --silent --show-error --max-time 120 \
   --user "opencode:$password" "$url/config" \
-  | jq -e '.default_agent == "auto" and (.plugin | any(contains("model-router.mjs")))'
-docker exec "$name" node --input-type=module -e '
-  const { default: plugin } = await import("/etc/opencode/plugins/model-router.mjs");
-  const hooks = await plugin({});
-  if (typeof hooks["chat.message"] !== "function") process.exit(1);
+  | jq -e '.model == "auto-router/quality" and
+    (.plugin | any(contains("opencode-auto-router"))) and
+    (.plugin | any(contains("@slkiser/opencode-quota")))'
+docker exec "$name" sh -ec '
+  cmp /etc/opencode/opencode-auto-router.json "$HOME/.config/opencode/opencode-auto-router.json"
 '
+curl --fail --silent --show-error --max-time 120 \
+  --user "opencode:$password" "$url/command" \
+  | jq -e 'any(.name == "quota")'
+
+# Exercise the installed upstream hook without inference or provider credentials.
+session=$(curl --fail --silent --show-error --user "opencode:$password" \
+  -H 'Content-Type: application/json' -d '{}' "$url/session" | jq -r .id)
+curl --fail --silent --show-error --max-time 120 --user "opencode:$password" \
+  -H 'Content-Type: application/json' \
+  -d '{"noReply":true,"model":{"providerID":"auto-router","modelID":"quality"},"parts":[{"type":"text","text":"hello"}]}' \
+  "$url/session/$session/message" \
+  | jq -e '.info.model == {"providerID":"google","modelID":"gemini-3.8-flash"}'
+curl --fail --silent --show-error --user "opencode:$password" \
+  -X DELETE "$url/session/$session"
 
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
