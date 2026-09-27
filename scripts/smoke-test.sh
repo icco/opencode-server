@@ -11,7 +11,7 @@ docker run --rm --entrypoint sh "$image" -ec '
     wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm; do
     command -v "$tool"
   done
-  test "$(pnpm --version)" = 10.34.5
+  test "$(pnpm --version)" = 12.6.0
   opencode --version
   tsc --version
   test -w "$(dirname "$PNPM_HOME")"

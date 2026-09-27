@@ -116,7 +116,7 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
 
 ## Configuration and development
 
-- Includes Go, TypeScript, pnpm 10.34.5, and common shell tools; see [`Dockerfile`](Dockerfile).
+- Includes Go, TypeScript, pnpm 12.6.0, and common shell tools; see [`Dockerfile`](Dockerfile).
   Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
 - Defaults live in [`opencode.json`](opencode.json), loaded at
   `/etc/opencode/opencode.json`. Mount a replacement there read-only to customize.
