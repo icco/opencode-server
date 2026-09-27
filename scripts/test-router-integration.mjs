@@ -35,6 +35,9 @@ try {
   }
   const config = await request("/config");
   assert.equal(config.model, "auto-router/quality");
+  const auth = await request("/provider/auth");
+  assert.ok(auth.google?.some((method) => method.label === "OAuth with Google (Gemini CLI)"),
+    `Gemini OAuth registered: ${JSON.stringify(auth)}`);
   const commands = await request("/command");
   assert.ok(commands.some((command) => command.name === "quota"), "upstream quota commands registered");
   session = await request("/session", { title: "Model-router no-inference integration test" });

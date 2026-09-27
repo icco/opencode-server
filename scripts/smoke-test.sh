@@ -68,7 +68,7 @@ done
 
 curl --fail --silent --show-error --max-time 120 \
   --user "opencode:$password" "$url/provider/auth" \
-  | jq -e '.google | any(.label == "OAuth with Google (Gemini CLI)")'
+  | jq -e 'if .google then .google | any(.label == "OAuth with Google (Gemini CLI)") else error("Missing Google auth: \(.)") end'
 curl --fail --silent --show-error --max-time 120 \
   --user "opencode:$password" "$url/provider/auth" \
   | jq -e '.["github-copilot"] | any(.type == "oauth")'
