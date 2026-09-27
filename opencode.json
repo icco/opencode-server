@@ -27,8 +27,19 @@
         "quality": {
           "name": "Auto Router (quality-first)",
           "tool_call": true,
-          "limit": { "context": 128000, "output": 16000 },
-          "modalities": { "input": ["text", "image"], "output": ["text"] }
+          "limit": {
+            "context": 128000,
+            "output": 16000
+          },
+          "modalities": {
+            "input": [
+              "text",
+              "image"
+            ],
+            "output": [
+              "text"
+            ]
+          }
         }
       }
     }
