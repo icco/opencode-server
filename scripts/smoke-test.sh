@@ -8,9 +8,13 @@ password=$(openssl rand -hex 24)
 # Check script dependencies as the non-root runtime user, without starting the server.
 docker run --rm --entrypoint sh "$image" -ec '
   for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
-    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch; do
+    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm; do
     command -v "$tool"
   done
+  test "$(pnpm --version)" = 10.34.5
+  opencode --version
+  tsc --version
+  test -w "$(dirname "$PNPM_HOME")"
 '
 
 # Exercise the yq v4 merge syntax used by generate_mappings.sh, with sponge

@@ -19,10 +19,12 @@ jobs:
           sh -n healthcheck.sh
           bash -n scripts/smoke-test.sh
           shellcheck entrypoint.sh healthcheck.sh scripts/smoke-test.sh
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       - name: Test model routing
         run: |
-          npm ci --ignore-scripts --omit=optional
-          npm test
+          pnpm install --frozen-lockfile --ignore-scripts --no-optional
+          pnpm test
       - name: Validate Compose
         env:
           OPENCODE_SERVER_PASSWORD: validation-only-not-a-deployment-password

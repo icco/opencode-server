@@ -149,8 +149,8 @@ server). A Compose mount change requires `docker compose up -d --force-recreate 
 Run the configuration contract tests against the pinned upstream router:
 
 ```sh
-npm ci --ignore-scripts --omit=optional
-npm test
+pnpm install --frozen-lockfile --ignore-scripts --no-optional
+pnpm test
 ```
 
 For a local integration check with OpenCode installed and providers connected:
@@ -187,6 +187,8 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
 
 - The image includes Go (`go`, `gofmt`) and TypeScript (`tsc`). Go-installed tools
   in `/data/go/bin` are on `PATH`; Go modules and build caches persist under `/data`.
+- pnpm 10.34.5 is installed in the image and pinned in `package.json` for local
+  development and CI. Runtime global installs use `/data/.local/share/pnpm`.
 - Script and shell tools include:
   - Search/navigation: `ag`, `rg`, `fd` (also available as `fdfind`), `fzf`, `tree`,
     and `zoxide`.

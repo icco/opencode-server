@@ -19,13 +19,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ARG OPENCODE_VERSION=1.18.31
 ARG TYPESCRIPT_VERSION=7.0.2
-RUN npm install -g "opencode-ai@${OPENCODE_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
-    && npm cache clean --force \
+ARG PNPM_VERSION=10.34.5
+ENV PNPM_HOME=/opt/pnpm
+ENV PATH=${PNPM_HOME}:${PATH}
+RUN mkdir -p /opt/pnpm-cli "$PNPM_HOME" \
+    && curl --fail --silent --show-error --location \
+      "https://registry.npmjs.org/pnpm/-/pnpm-${PNPM_VERSION}.tgz" \
+      | tar -xz --strip-components=1 -C /opt/pnpm-cli \
+    && ln -s /opt/pnpm-cli/bin/pnpm.cjs /usr/local/bin/pnpm \
+    && pnpm --allow-build=opencode-ai add --global \
+      "opencode-ai@${OPENCODE_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
     && opencode --version
 
 ENV HOME=/data \
+    PNPM_HOME=/data/.local/share/pnpm \
     GOPATH=/data/go \
-    PATH=/usr/local/go/bin:/data/go/bin:${PATH} \
+    PATH=/usr/local/go/bin:/data/go/bin:/data/.local/share/pnpm:${PATH} \
     XDG_CONFIG_HOME=/data/.config \
     XDG_DATA_HOME=/data/.local/share \
     XDG_STATE_HOME=/data/.local/state \
@@ -38,7 +47,7 @@ ENV HOME=/data \
 COPY opencode.json /etc/opencode/opencode.json
 COPY opencode-auto-router.json /etc/opencode/opencode-auto-router.json
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
-RUN mkdir -p /data/workspace /data/.config/opencode \
+RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
     && chown -R node:node /data
 

@@ -36,6 +36,7 @@ jobs:
         run: |
           while IFS= read -r -d '' file; do
             case "$file" in
+              pnpm-lock.yaml) continue ;;
               *.yml|*.yaml) yq -iP '.' "$file" ;;
               *.json) yq -iP -o=json '.' "$file" ;;
             esac
