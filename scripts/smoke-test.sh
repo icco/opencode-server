@@ -12,7 +12,7 @@ docker run --rm --entrypoint sh -v "$PWD:/tests:ro" "$image" -ec \
 # Check script dependencies as the non-root runtime user, without starting the server.
 docker run --rm --entrypoint sh "$image" -ec '
   for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
-    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm haproxy; do
+    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm caddy; do
     command -v "$tool"
   done
   test "$(pnpm --version)" = 12.6.0
@@ -99,5 +99,5 @@ OPENCODE_TEST_URL="$url" OPENCODE_TEST_HOST=localhost:4096 OPENCODE_SERVER_PASSW
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
 
 # Losing the real packaged gateway must also stop OpenCode/the container.
-docker exec "$name" pkill -x haproxy || true
+docker exec "$name" pkill -x caddy || true
 test "$(timeout 30 docker wait "$name")" = 1

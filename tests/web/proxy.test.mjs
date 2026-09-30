@@ -50,6 +50,9 @@ test("only explicit proxy peers can supply client addresses and HTTPS provenance
   assert.equal(JSON.parse(good.body)["x-forwarded-for"], "203.0.113.42");
   assert.equal(good.headers["strict-transport-security"], "max-age=31536000");
   assert.equal((await trusted.send("/api/info", { "X-Forwarded-Proto": "http" })).status, 403);
+  await trusted.stop();
+  assert.match(trusted.logs(), /"client_ip":"203.0.113.42"/);
+  assert.ok(!trusted.logs().includes("192.0.2.88"), "spoofed forwarding prefix reached logs");
 });
 
 test("twenty backend authentication failures throttle that client without counting successful traffic or origin denials", async t => {
@@ -112,5 +115,5 @@ test("access and transport-error logs contain no credential-bearing URLs or head
   for (const marker of [auth, "query-secret-marker", "referer-secret-marker", "pairing-secret-marker", "response-secret-marker", "cookie-secret-marker"]) {
     assert.ok(!p.logs().includes(marker), `logs leaked ${marker}`);
   }
-  assert.match(p.logs(), /"component":"gateway"/);
+  assert.match(p.logs(), /"logger":"http.log.access.gateway"/);
 });

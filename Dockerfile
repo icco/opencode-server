@@ -4,14 +4,23 @@ FROM golang AS yq
 ARG YQ_VERSION=v4.53.6
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
+FROM golang AS gateway
+WORKDIR /build
+COPY gateway/go.mod gateway/go.sum ./
+RUN go mod download
+COPY gateway/ ./
+RUN go test -race ./... && \
+    CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/caddy .
+
 FROM node:26.10.0-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
+COPY --from=gateway /out/caddy /usr/local/bin/caddy
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
-      gettext-base gh git git-lfs haproxy jq less moreutils openssh-client openssl \
+      gettext-base gh git git-lfs jq less moreutils openssh-client openssl \
       procps python3 python3-pip python3-venv ripgrep rsync shellcheck \
       silversearcher-ag tini tmux tree unzip vim wget xz-utils zip zoxide zsh \
     && rm -rf /var/lib/apt/lists/* \

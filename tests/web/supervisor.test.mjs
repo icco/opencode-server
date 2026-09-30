@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { request as httpRequest } from "node:http";
-import { haproxy, password, port } from "./helpers.mjs";
+import { caddy, password, port } from "./helpers.mjs";
 
 async function until(check, child) {
   for (let n = 0; n < 150; n++) {
@@ -37,7 +37,7 @@ server.listen(+process.argv.at(-1), '127.0.0.1');
 process.on('SIGTERM', () => { writeFileSync(${JSON.stringify(join(dir, "terminated"))}, 'yes'); server.closeAllConnections(); server.close(() => process.exit(0)); });
 `, { mode: 0o700 });
   await writeFile(proxy, `#!/usr/bin/env node
-process.exit(process.argv.includes('-c') ? 0 : 2);
+process.exit(process.argv.includes('validate') ? 0 : 2);
 `, { mode: 0o700 });
   const webPort = await port();
   const env = { PATH: process.env.PATH, HOME: dir, XDG_STATE_HOME: join(dir, "state"),
@@ -47,7 +47,7 @@ process.exit(process.argv.includes('-c') ? 0 : 2);
   const runner = join(dir, "runner.mjs");
   await writeFile(runner, `import { supervise } from ${JSON.stringify(module)};
 process.umask(0o077);
-process.exitCode = await supervise(${JSON.stringify(env)}, {server:${JSON.stringify(server)}, proxy:${JSON.stringify(failure === "proxy" ? proxy : haproxy)}});
+process.exitCode = await supervise(${JSON.stringify(env)}, {server:${JSON.stringify(server)}, proxy:${JSON.stringify(failure === "proxy" ? proxy : caddy)}});
 `);
   const child = spawn(process.execPath, [runner], { stdio: ["ignore", "pipe", "pipe"] });
   const exit = once(child, "exit");

@@ -7,10 +7,10 @@ import { authorization, settings } from "./settings.mjs";
 import { proxyConfig } from "./proxy.mjs";
 
 // Exported for lifecycle tests with disposable executable paths.
-export async function supervise(env, executables = { server: "opencode", proxy: "haproxy" }) {
+export async function supervise(env, executables = { server: "opencode", proxy: "/usr/local/bin/caddy" }) {
   const s = settings(env);
   const work = mkdtempSync(join(tmpdir(), "opencode-web-"));
-  const config = join(work, "haproxy.cfg");
+  const config = join(work, "caddy.json");
   const children = [];
   let logFd;
   let shuttingDown = false;
@@ -38,8 +38,8 @@ export async function supervise(env, executables = { server: "opencode", proxy: 
   try {
     writeFileSync(config, proxyConfig(s), { mode: 0o600 });
     // The gateway does not need provider credentials or the server password.
-    const proxyEnv = { PATH: env.PATH, LANG: "C" };
-    const check = spawnSync(executables.proxy, ["-c", "-f", config], { env: proxyEnv, encoding: "utf8" });
+    const proxyEnv = { PATH: env.PATH, LANG: "C", HOME: work, XDG_CONFIG_HOME: work, XDG_DATA_HOME: work };
+    const check = spawnSync(executables.proxy, ["validate", "--config", config], { env: proxyEnv, encoding: "utf8" });
     if (check.error || check.status !== 0) throw new Error(`Gateway configuration failed validation: ${check.stderr || "proxy unavailable"}`);
     const logDir = join(env.XDG_STATE_HOME || join(env.HOME, ".local/state"), "opencode-web");
     mkdirSync(logDir, { recursive: true, mode: 0o700 });
@@ -88,7 +88,7 @@ export async function supervise(env, executables = { server: "opencode", proxy: 
     }
     if (!shuttingDown) {
       if (!ready) throw new Error("OpenCode did not become healthy within the startup deadline");
-      launch("Gateway", executables.proxy, ["-db", "-f", config], { env: proxyEnv, stdio: "inherit" });
+      launch("Gateway", executables.proxy, ["run", "--config", config], { env: proxyEnv, stdio: "inherit" });
       console.log(`Protected OpenCode listening on port ${s.webPort}`);
     }
     return await stopped;

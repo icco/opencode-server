@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { once } from "node:events";
 import { proxyConfig } from "../../web/proxy.mjs";
 
-export const haproxy = process.env.HAPROXY_BIN || "haproxy";
+export const caddy = process.env.CADDY_BIN || "caddy";
 export const password = "disposable-web-test-password-".repeat(2);
 export const auth = `Basic ${Buffer.from(`opencode:${password}`).toString("base64")}`;
 export async function port() {
@@ -31,11 +31,12 @@ export async function gateway(t, { secure = false, proxies = [], handler, upgrad
     origin: secure ? "https://code.example" : "http://localhost:4096", host: secure ? "code.example" : "localhost:4096", secure, proxies };
   const dir = await mkdtemp(join(tmpdir(), "opencode-proxy-test-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const config = join(dir, "haproxy.cfg");
+  const config = join(dir, "caddy.json");
   await writeFile(config, proxyConfig(s));
-  const check = spawnSync(haproxy, ["-c", "-f", config], { encoding: "utf8" });
+  const env = { PATH: process.env.PATH, HOME: dir, XDG_CONFIG_HOME: dir, XDG_DATA_HOME: dir };
+  const check = spawnSync(caddy, ["validate", "--config", config], { env, encoding: "utf8" });
   if (check.error || check.status !== 0) throw new Error(check.stderr || String(check.error));
-  const child = spawn(haproxy, ["-db", "-f", config], { stdio: ["ignore", "pipe", "pipe"] });
+  const child = spawn(caddy, ["run", "--config", config], { env, stdio: ["ignore", "pipe", "pipe"] });
   let logs = "";
   child.stdout.on("data", data => { logs += data; });
   child.stderr.on("data", data => { logs += data; });

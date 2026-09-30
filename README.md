@@ -16,10 +16,12 @@ Set `OPENCODE_SERVER_PASSWORD` in `.env` to a random password of at least 32
 characters (`openssl rand -hex 32`). Open <http://localhost:4096> and log in as
 `opencode`. Keep repositories under `/data/workspace`.
 
-Port 4096 is the bundled HAProxy gateway. OpenCode listens on **127.0.0.1:4097
+Port 4096 is the bundled Caddy gateway. OpenCode listens on **127.0.0.1:4097
 inside the container**, so neighboring containers cannot connect directly to the
 backend. The default `web` command supervises both processes and stops the
 container if either exits. Health checks exercise both through the gateway.
+Caddy's admin API and automatic HTTPS are disabled inside the image; the outer
+reverse proxy remains responsible for TLS.
 
 The `/data` volume preserves workspaces, sessions, credentials, and caches.
 Back it up. Host bind mounts must be writable by UID/GID 1000.
@@ -146,9 +148,12 @@ and proxy to `opencode:4096`. Only the gateway is network-accessible; do not pub
 - Per-client throttling after 20 backend HTTP 401 responses in a rolling ten-minute
   window. The gateway responds 429 with `Retry-After: 600`; successful traffic and
   cross-origin 403s do not increment the counter. Clients sharing an IP share its
-  bucket. Counters are bounded/in-memory and reset when the gateway restarts.
-- Streaming and WebSocket support, with one-hour idle timeouts.
-- Gateway logs contain only client IP, status and byte count. They omit request
+  bucket. The small `opencode_guard` Caddy module counts native backend failures;
+  it never parses credentials or implements authentication. Counters reset on
+  restart, retain at most 20 failures per IP, and are capped at 100,000 IPs with
+  least-recently-used eviction.
+- Caddy's standard streaming/WebSocket proxy with response buffering disabled.
+- Gateway logs retain connection metadata, status and byte count. They omit request
   URLs/headers and response headers, including on errors. OpenCode's native
   stdout/stderr is written to a private, mode-600 diagnostic file at
   `$XDG_STATE_HOME/opencode-web/server.log` instead of Docker logs. It rotates at
@@ -227,25 +232,27 @@ host-login keys, and keep unrelated deployment secrets outside mounted workspace
 - Restart OpenCode after config changes. After environment/password changes, run
   `docker compose up -d --force-recreate opencode`.
 - OpenCode/tool/plugin versions are pinned in `Dockerfile` and `opencode.json`;
-  HAProxy receives the Debian base distribution's security updates during image
-  builds. CI tests both
+  the bundled Caddy version is pinned in `gateway/go.mod`/`go.sum`. CI tests both
   architectures and publishes `main` with provenance attestations.
 
 ```sh
 pnpm install --frozen-lockfile --ignore-scripts --no-optional
 pnpm test
-HAPROXY_BIN=/path/to/haproxy node --test --test-timeout=30000 tests/web/*.test.mjs
+(cd gateway && go test -race ./... && go build -o /tmp/opencode-caddy .)
+CADDY_BIN=/tmp/opencode-caddy node --test --test-timeout=30000 tests/web/*.test.mjs
 node scripts/test-router-integration.mjs
 docker build -t opencode-server .
 bash scripts/smoke-test.sh opencode-server
 gh attestation verify oci://ghcr.io/icco/opencode-server:main --owner icco
 ```
 
-The web tests require HAProxy 3.0+ and OpenCode V2 and use disposable data/ports.
+The web tests require the Caddy build from `gateway/` and OpenCode V2 and use disposable data/ports.
 They test the actual proxy, failure throttling, forwarded-header trust, WebSockets,
 streaming, secret handling, process failure/shutdown, and a real native server
-without inference. Docker smoke tests run them against the packaged HAProxy on
+without inference. Docker smoke tests run them against the packaged Caddy on
 both architectures and test a real file-secret deployment.
+The Caddy middleware's Go tests also run with the race detector during each image
+build, covering expiration, bounded memory, concurrent failures and rejected requests.
 
 The routing integration check needs OpenCode V2; it uses isolated data on port 4197
 (`ROUTER_TEST_PORT` overrides) and requests no inference. Image smoke tests need

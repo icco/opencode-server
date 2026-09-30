@@ -7,7 +7,7 @@ import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { auth, haproxy, password, port } from "./helpers.mjs";
+import { auth, caddy, password, port } from "./helpers.mjs";
 
 test("real OpenCode V2 works through the gateway with native auth, file-secret health checks and private backend", async t => {
   const dir = await mkdtemp(join(tmpdir(), "opencode-real-web-"));
@@ -26,7 +26,7 @@ test("real OpenCode V2 works through the gateway with native auth, file-secret h
   await writeFile(runner, `import { supervise } from ${JSON.stringify(fileURLToPath(new URL("../../web/supervisor.mjs", import.meta.url)))};
 import { loadSecrets } from ${JSON.stringify(fileURLToPath(new URL("../../web/settings.mjs", import.meta.url)))};
 process.umask(0o077);
-process.exitCode = await supervise(loadSecrets(process.env), {server:'opencode',proxy:${JSON.stringify(haproxy)}});
+process.exitCode = await supervise(loadSecrets(process.env), {server:'opencode',proxy:${JSON.stringify(caddy)}});
 `);
   const child = spawn(process.execPath, [runner], { cwd: dir, env, stdio: ["ignore", "pipe", "pipe"] });
   const exited = once(child, "exit");
