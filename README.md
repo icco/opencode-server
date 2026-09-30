@@ -45,9 +45,13 @@ permissions, and add required hosts to `known_hosts` on the host.
 Connect both providers through the Web UI or the running server:
 
 ```sh
-docker compose exec opencode opencode auth login github-copilot --server http://127.0.0.1:4096
-docker compose exec opencode opencode auth login google --server http://127.0.0.1:4096
+docker compose exec opencode /usr/local/bin/entrypoint.sh opencode auth login github-copilot --server http://127.0.0.1:4097
+docker compose exec opencode /usr/local/bin/entrypoint.sh opencode auth login google --server http://127.0.0.1:4097
 ```
+
+Inside the container, the entrypoint loads the configured password/file secret
+into the native CLI's authentication environment. Use backend port 4097 for these
+local maintenance commands; the gateway on 4096 requires the public Host header.
 
 - **Copilot:** choose GitHub Copilot and complete device login. Requires a subscription.
 - **Gemini:** choose Google → **Manually enter API Key**. Organization-backed Code
