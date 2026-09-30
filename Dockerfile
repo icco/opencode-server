@@ -4,10 +4,19 @@ FROM golang AS yq
 ARG YQ_VERSION=v4.53.6
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
+FROM golang AS gateway
+WORKDIR /build
+COPY gateway/go.mod gateway/go.sum ./
+RUN go mod download
+COPY gateway/ ./
+RUN go test -race ./... && \
+    CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/caddy .
+
 FROM node:26.10.0-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
+COPY --from=gateway /out/caddy /usr/local/bin/caddy
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
@@ -58,6 +67,7 @@ ENV HOME=/data \
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY orchestra.jsonc /etc/opencode/orchestra.jsonc
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
+COPY web/ /usr/local/lib/opencode-server/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
     && chown -R node:node /data
@@ -68,4 +78,4 @@ EXPOSE 4096
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD ["/usr/local/bin/healthcheck.sh"]
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
-CMD ["opencode", "serve", "--hostname", "0.0.0.0", "--port", "4096"]
+CMD ["web"]

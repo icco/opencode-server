@@ -8,3 +8,7 @@
 !pnpm-lock.yaml
 !scripts/
 !scripts/build-config.mjs
+!web/
+!web/**
+!gateway/
+!gateway/**

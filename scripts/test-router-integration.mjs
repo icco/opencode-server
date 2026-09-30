@@ -6,6 +6,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import assert from "node:assert/strict";
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const external = process.env.OPENCODE_TEST_URL;
@@ -17,11 +19,28 @@ let child;
 let logs = "";
 let session;
 const headers = { Authorization: `Basic ${Buffer.from(`opencode:${password}`).toString("base64")}`,
-  "Content-Type": "application/json" };
+  "Content-Type": "application/json", ...(process.env.OPENCODE_TEST_HOST ? { Host: process.env.OPENCODE_TEST_HOST } : {}) };
+function fetchServer(url, options) {
+  // Docker smoke tests map an ephemeral local port to a fixed virtual host.
+  // fetch ignores Host overrides; use Node's HTTP client for that test mode.
+  if (!process.env.OPENCODE_TEST_HOST) return fetch(url, options);
+  return new Promise((resolve, reject) => {
+    const request = new URL(url).protocol === "https:" ? httpsRequest : httpRequest;
+    const req = request(url, { ...options, agent: false }, res => {
+      const chunks = [];
+      res.on("data", chunk => chunks.push(chunk));
+      res.on("error", reject);
+      res.on("end", () => resolve(new Response([204, 205, 304].includes(res.statusCode) ? null : Buffer.concat(chunks),
+        { status: res.statusCode, headers: res.headers })));
+    });
+    req.on("error", reject);
+    req.end(options?.body);
+  });
+}
 async function request(path, body, method = body ? "POST" : "GET") {
   const target = new URL(path, url);
   target.searchParams.set("location[directory]", external ? "/data/workspace" : root);
-  const response = await fetch(target, { method, headers,
+  const response = await fetchServer(target, { method, headers,
     body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(120000) });
   const text = await response.text();
   if (!response.ok) throw new Error(`${path}: ${response.status} ${text}`);
@@ -56,7 +75,10 @@ try {
   const info = await until(() => request("/api/info"));
   assert.equal(info.version, "2.0.18");
   for (const authorization of [undefined, `Basic ${Buffer.from("opencode:wrong-password").toString("base64")}`]) {
-    const response = await fetch(`${url}/api/info`, { headers: authorization ? { Authorization: authorization } : {} });
+    const response = await fetchServer(`${url}/api/info`, { headers: {
+      ...(process.env.OPENCODE_TEST_HOST ? { Host: process.env.OPENCODE_TEST_HOST } : {}),
+      ...(authorization ? { Authorization: authorization } : {}),
+    } });
     assert.equal(response.status, 401);
   }
   await until(async () => {
