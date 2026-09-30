@@ -12,7 +12,11 @@ services:
     cpus: 2
     environment:
       GH_TOKEN: ${GH_TOKEN:-}
-      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Set OPENCODE_SERVER_PASSWORD in .env}
+      # The entrypoint requires exactly one password source before opening a port.
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:-}
+      OPENCODE_SERVER_PASSWORD_FILE: ${OPENCODE_SERVER_PASSWORD_FILE:-}
+      OPENCODE_PUBLIC_URL: ${OPENCODE_PUBLIC_URL:-http://localhost:4096}
+      OPENCODE_TRUSTED_PROXIES: ${OPENCODE_TRUSTED_PROXIES:-}
     ports:
       - 127.0.0.1:4096:4096
     volumes:

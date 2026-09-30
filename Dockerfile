@@ -11,7 +11,7 @@ COPY --from=yq /out/yq /usr/local/bin/yq
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
-      gettext-base gh git git-lfs jq less moreutils openssh-client openssl \
+      gettext-base gh git git-lfs haproxy jq less moreutils openssh-client openssl \
       procps python3 python3-pip python3-venv ripgrep rsync shellcheck \
       silversearcher-ag tini tmux tree unzip vim wget xz-utils zip zoxide zsh \
     && rm -rf /var/lib/apt/lists/* \
@@ -58,6 +58,7 @@ ENV HOME=/data \
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY orchestra.jsonc /etc/opencode/orchestra.jsonc
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
+COPY web/ /usr/local/lib/opencode-server/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
     && chown -R node:node /data
@@ -68,4 +69,4 @@ EXPOSE 4096
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD ["/usr/local/bin/healthcheck.sh"]
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
-CMD ["opencode", "serve", "--hostname", "0.0.0.0", "--port", "4096"]
+CMD ["web"]
