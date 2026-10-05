@@ -45,3 +45,14 @@ test("generated V2 agents preserve upstream instructions and read-only worker pe
   assert.equal(worker.permissions.find(p => p.action === "*").effect, "deny");
   assert.equal(worker.model, policy.models.agents["orch-repo"]);
 });
+
+test("MCP permissions survive materialization without changing worker permissions", async () => {
+  const runtime = await buildConfig();
+  function permission(agent, action) {
+    return runtime.agents[agent].permissions.filter(p =>
+      p.action === "*" || p.action === action).at(-1)?.effect;
+  }
+  assert.equal(permission("orch-lead", "grafana_*"), "allow");
+  assert.equal(permission("orch-lead", "context7_*"), "allow");
+  assert.equal(permission("orch-repo", "grafana_*"), "deny");
+});

@@ -61,6 +61,26 @@ For [WakaTime](https://github.com/angristan/opencode-wakatime), create
 api_key = <your key from https://wakatime.com/api-key>
 ```
 
+## MCP integrations
+
+- **Grafana:** the image bundles [Grafana MCP](https://github.com/grafana/mcp-grafana)
+  v2.0.0 for read-only dashboards, alerts, annotations, Loki logs (LogQL), and
+  Prometheus metrics (PromQL). Set `GRAFANA_URL` and
+  `GRAFANA_SERVICE_ACCOUNT_TOKEN` in `.env`, then recreate the container. Use a
+  Grafana service account with the Viewer role and access to the required
+  datasources. Include Grafana's subpath in the URL when applicable, and use an
+  endpoint that accepts service-account authentication without a browser-login
+  proxy. Loki and Prometheus use Grafana's existing datasource configuration.
+- **Context7:** current library documentation via `https://mcp.context7.com/mcp`.
+  If OpenCode reports authentication is needed, open `/mcps`, select Context7,
+  and sign in. OAuth credentials persist in `/data`.
+
+Both integrations use V2 Code Mode. The default `orch-lead` agent can use them.
+Grafana can advertise tools before credentials are configured; verify access by
+listing datasources and running a small query, not just checking MCP connection
+status. To turn an integration off, set `disabled: true` on its entry under
+`mcp.servers` in your replacement config.
+
 ## Specialist routing and quota
 
 [`Orchestra`](https://github.com/Oeronteros/opencode-orchestra) runs quality-first

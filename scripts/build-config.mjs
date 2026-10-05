@@ -13,11 +13,11 @@ export async function buildConfig() {
   for (const [name, agent] of Object.entries(createAgentSet(policy, await loadPrompts()))) {
     config.agents[name] = {
       ...config.agents[name], description: agent.description, system: agent.prompt, model: agent.model,
-      permissions: Object.entries(agent.permission).flatMap(([action, rules]) => {
+      permissions: [...Object.entries(agent.permission).flatMap(([action, rules]) => {
         action = ({ bash: "shell", task: "subagent", write: "edit", patch: "edit" })[action] ?? action;
         return typeof rules === "string" ? [{ action, resource: "*", effect: rules }] :
           Object.entries(rules).map(([resource, effect]) => ({ action, resource, effect }));
-      }),
+      }), ...(config.agents[name]?.permissions ?? [])],
     };
   }
   return JSON.parse(JSON.stringify(config));
