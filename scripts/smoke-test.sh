@@ -4,14 +4,15 @@ set -euo pipefail
 image=${1:?Usage: smoke-test.sh IMAGE}
 name="opencode-test-$$"
 password=$(openssl rand -hex 24)
+expected_pnpm=$(node -p 'require("./package.json").packageManager.split("@")[1]')
 
 # Check script dependencies as the non-root runtime user, without starting the server.
-docker run --rm --entrypoint sh "$image" -ec '
+docker run --rm -e "EXPECTED_PNPM=$expected_pnpm" --entrypoint sh "$image" -ec '
   for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
     wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm mcp-grafana; do
     command -v "$tool"
   done
-  test "$(pnpm --version)" = 12.6.0
+  test "$(pnpm --version)" = "$EXPECTED_PNPM"
   opencode --version
   mcp-grafana --version
   tsc --version
@@ -41,14 +42,15 @@ status=0
 timeout 15 docker run --rm "$image" || status=$?
 test "$status" = 1
 status=0
-timeout 15 docker run --rm -e OPENCODE_SERVER_PASSWORD=short "$image" || status=$?
+timeout 15 docker run --rm -e OPENCODE_PASSWORD=short "$image" || status=$?
 test "$status" = 1
 
 docker run -d --name "$name" \
   --cap-drop ALL --security-opt no-new-privileges:true \
   --pids-limit 512 --memory 4g --cpus 2 \
   -p 127.0.0.1::4096 \
-  -e "OPENCODE_SERVER_PASSWORD=$password" \
+  -e "OPENCODE_PASSWORD=$password" \
+  -e LUNCHMONEY_API_TOKEN=catalog-test-only \
   "$image"
 cleanup() {
   docker logs "$name"
@@ -74,9 +76,25 @@ done
 
 docker exec "$name" sh -ec '
   cmp /etc/opencode/orchestra.jsonc "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+  cmp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+  opencode api get /api/info --server http://127.0.0.1:4096
 '
-OPENCODE_TEST_URL="$url" OPENCODE_SERVER_PASSWORD="$password" \
+OPENCODE_TEST_URL="$url" OPENCODE_PASSWORD="$password" \
   node scripts/test-router-integration.mjs
 
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
+
+# Re-entering startup must preserve edits and migrate a legacy global JSON policy.
+docker exec "$name" sh -ec '
+  printf "\nPersistent test instructions\n" >> "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+  cp "$XDG_CONFIG_HOME/opencode/AGENTS.md" "$HOME/expected-agents.md"
+  mv "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" "$XDG_CONFIG_HOME/opencode/orchestra.json"
+  /usr/local/bin/entrypoint.sh true
+  cmp "$HOME/expected-agents.md" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+  cmp "$XDG_CONFIG_HOME/opencode/orchestra.json" "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+  printf "\n// Persistent policy edit\n" >> "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+  cp "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" "$HOME/expected-orchestra.jsonc"
+  /usr/local/bin/entrypoint.sh true
+  cmp "$HOME/expected-orchestra.jsonc" "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+'
