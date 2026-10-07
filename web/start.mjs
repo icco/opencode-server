@@ -12,6 +12,8 @@ try {
     mkdirSync(path, { recursive: true, mode: 0o700 });
   }
   const policy = join(env.XDG_CONFIG_HOME, "opencode/orchestra.jsonc");
+  const instructions = join(env.XDG_CONFIG_HOME, "opencode/AGENTS.md");
+  if (!existsSync(instructions)) copyFileSync("/etc/opencode/AGENTS.md", instructions);
   if (!existsSync(policy) && !existsSync(policy.replace(/jsonc$/, "json"))) {
     copyFileSync("/etc/opencode/orchestra.jsonc", policy);
   }

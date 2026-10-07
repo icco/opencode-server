@@ -1,0 +1,98 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "update": "disable",
+  "model": "github-copilot/gpt-6-astra",
+  "default_agent": "orch-lead",
+  "compaction": {
+    "buffer": 10000
+  },
+  // Orchestra definitions are generated during the image build; these are overrides.
+  "agents": {
+    "title": {
+      "model": "github-copilot/gpt-5.4-mini"
+    },
+    "compaction": {
+      "model": "github-copilot/gpt-6-astra"
+    },
+    "orch-lead": {
+      "permissions": [
+        {
+          "action": "grafana_*",
+          "resource": "*",
+          "effect": "allow"
+        },
+        {
+          "action": "lunchmoney_*",
+          "resource": "*",
+          "effect": "allow"
+        }
+      ]
+    }
+  },
+  "mcp": {
+    "servers": {
+      "lunchmoney": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@akutishevsky/lunchmoney-mcp@3.0.0"
+        ],
+        "environment": {
+          "LUNCHMONEY_API_TOKEN": "{env:LUNCHMONEY_API_TOKEN}"
+        }
+      },
+      "grafana": {
+        "type": "local",
+        "command": [
+          "mcp-grafana",
+          "--transport",
+          "stdio",
+          "--enabled-tools",
+          "search,datasource,prometheus,loki,alerting,dashboard,navigation,annotations",
+          "--disable-write"
+        ],
+        "environment": {
+          "GRAFANA_URL": "{env:GRAFANA_URL}",
+          "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{env:GRAFANA_SERVICE_ACCOUNT_TOKEN}"
+        }
+      },
+      "context7": {
+        "type": "remote",
+        "url": "https://mcp.context7.com/mcp"
+      }
+    }
+  },
+  "plugins": [
+    "opencode-gemini-auth@2.0.1",
+    "opencode-wakatime@1.4.0",
+    "@oeronteros-1/opencode-orchestra@3.0.11",
+    "@slkiser/opencode-quota@5.0.2"
+  ],
+  "experimental": {
+    "policies": [
+      {
+        "action": "provider.use",
+        "resource": "*",
+        "effect": "deny"
+      },
+      {
+        "action": "provider.use",
+        "resource": "google",
+        "effect": "allow"
+      },
+      {
+        "action": "provider.use",
+        "resource": "github-copilot",
+        "effect": "allow"
+      }
+    ]
+  },
+  "permissions": [
+    {
+      "action": "*",
+      "resource": "*",
+      "effect": "allow"
+    }
+  ]
+}

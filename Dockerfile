@@ -1,7 +1,7 @@
 FROM golang:1.27.1-trixie AS golang
 
 FROM golang AS yq
-ARG YQ_VERSION=v4.53.6
+ARG YQ_VERSION=v4.54.1
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
 FROM golang AS gateway
@@ -17,6 +17,7 @@ FROM node:26.10.0-trixie-slim AS tools
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
 COPY --from=gateway /out/caddy /usr/local/bin/caddy
+COPY --from=grafana/mcp-grafana:2.0.1@sha256:87b48c8fa1a09d00befe361e009be9ab85343ab95b7f2ebb374c1051832985b9 /app/mcp-grafana /usr/local/bin/mcp-grafana
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
@@ -26,9 +27,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
-ARG OPENCODE_VERSION=2.0.18
+ARG OPENCODE_VERSION=2.0.24
 ARG TYPESCRIPT_VERSION=7.0.2
-ARG PNPM_VERSION=12.6.0
+ARG PNPM_VERSION=12.10.1
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
@@ -44,7 +45,7 @@ RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; e
 
 FROM tools AS config
 WORKDIR /build
-COPY package.json pnpm-lock.yaml opencode.json orchestra.jsonc ./
+COPY package.json pnpm-lock.yaml opencode.jsonc orchestra.jsonc ./
 COPY scripts/build-config.mjs ./scripts/build-config.mjs
 RUN pnpm install --frozen-lockfile --ignore-scripts --no-optional \
     && node scripts/build-config.mjs /build/runtime.json
@@ -60,12 +61,12 @@ ENV HOME=/data \
     XDG_STATE_HOME=/data/.local/state \
     XDG_CACHE_HOME=/data/.cache \
     OPENCODE_CONFIG=/etc/opencode/opencode.json \
-    OPENCODE_HEADLESS=1 \
     OPENCODE_CLIENT=app \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY orchestra.jsonc /etc/opencode/orchestra.jsonc
+COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 COPY web/ /usr/local/lib/opencode-server/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \

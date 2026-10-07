@@ -4,19 +4,21 @@ set -euo pipefail
 image=${1:?Usage: smoke-test.sh IMAGE}
 name="opencode-test-$$"
 password=$(openssl rand -hex 24)
+expected_pnpm=$(node -p 'require("./package.json").packageManager.split("@")[1]')
 
 # Exercise the actual packaged proxy and supervisor, without provider inference.
 docker run --rm --entrypoint sh -v "$PWD:/tests:ro" "$image" -ec \
   'node --test --test-timeout=30000 /tests/tests/web/*.test.mjs'
 
 # Check script dependencies as the non-root runtime user, without starting the server.
-docker run --rm --entrypoint sh "$image" -ec '
+docker run --rm -e "EXPECTED_PNPM=$expected_pnpm" --entrypoint sh "$image" -ec '
   for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
-    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm caddy; do
+    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm caddy mcp-grafana; do
     command -v "$tool"
   done
-  test "$(pnpm --version)" = 12.6.0
+  test "$(pnpm --version)" = "$EXPECTED_PNPM"
   opencode --version
+  mcp-grafana --version
   tsc --version
   test -w "$(dirname "$PNPM_HOME")"
 '
@@ -64,6 +66,7 @@ docker run -d --name "$name" \
   -p 127.0.0.1::4096 \
   --mount "type=bind,source=$secret_file,target=/run/secrets/opencode_password,readonly" \
   -e OPENCODE_SERVER_PASSWORD_FILE=/run/secrets/opencode_password \
+  -e LUNCHMONEY_API_TOKEN=catalog-test-only \
   "$image"
 port=$(docker port "$name" 4096/tcp | cut -d: -f2)
 url="http://127.0.0.1:$port"
@@ -91,12 +94,28 @@ fi
 
 docker exec "$name" sh -ec '
   cmp /etc/opencode/orchestra.jsonc "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+  cmp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+  OPENCODE_PASSWORD=$(cat "$OPENCODE_SERVER_PASSWORD_FILE")
+  export OPENCODE_PASSWORD
+  opencode api get /api/info --server http://localhost:4096
 '
-OPENCODE_TEST_URL="$url" OPENCODE_TEST_HOST=localhost:4096 OPENCODE_SERVER_PASSWORD="$password" \
+OPENCODE_TEST_URL="$url" OPENCODE_TEST_HOST=localhost:4096 OPENCODE_PASSWORD="$password" \
   node scripts/test-router-integration.mjs
 
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
+
+# Re-entering startup must preserve persistent edits.
+docker exec "$name" sh -ec '
+  printf "\nPersistent test instructions\n" >> "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+  cp "$XDG_CONFIG_HOME/opencode/AGENTS.md" "$HOME/expected-agents.md"
+  /usr/local/bin/entrypoint.sh true
+  cmp "$HOME/expected-agents.md" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+  printf "\n// Persistent policy edit\n" >> "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+  cp "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" "$HOME/expected-orchestra.jsonc"
+  /usr/local/bin/entrypoint.sh true
+  cmp "$HOME/expected-orchestra.jsonc" "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+'
 
 # Losing the real packaged gateway must also stop OpenCode/the container.
 docker exec "$name" pkill -x caddy || true

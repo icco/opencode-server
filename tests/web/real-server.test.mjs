@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
 import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -62,7 +62,8 @@ process.exitCode = await supervise(loadSecrets(process.env), {server:'opencode',
   assert.equal((await send("/")).status, 200);
   assert.equal((await send("/api/info", { Authorization: auth, Origin: "https://attacker.example" })).status, 403);
   const info = await send("/api/info", { Authorization: auth });
-  assert.equal(JSON.parse(info.body).version, "2.0.18");
+  const dockerfile = await readFile(new URL("../../Dockerfile", import.meta.url), "utf8");
+  assert.equal(JSON.parse(info.body).version, dockerfile.match(/^ARG OPENCODE_VERSION=(.+)$/m)[1]);
   assert.equal(info.headers["cache-control"], "no-store");
   const ui = await send("/");
   assert.match(ui.headers["content-security-policy"], /script-src/);

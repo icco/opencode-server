@@ -2,14 +2,15 @@
   "name": "opencode-server-config-tests",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.6.0",
+  "packageManager": "pnpm@12.10.1",
   "scripts": {
     "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
-    "@opencode/plugin": "2.0.18",
-    "@opencode/schema": "2.0.18",
-    "@oeronteros-1/opencode-orchestra": "3.0.4",
-    "effect": "4.0.0-rc.112"
+    "@oeronteros-1/opencode-orchestra": "3.0.11",
+    "@opencode/plugin": "2.0.24",
+    "@opencode/schema": "2.0.24",
+    "effect": "4.0.0-rc.112",
+    "jsonc-parser": "3.3.1"
   }
 }
