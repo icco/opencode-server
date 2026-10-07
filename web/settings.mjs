@@ -3,12 +3,14 @@ import { isIP } from "node:net";
 
 export function loadSecrets(input) {
   const env = { ...input };
-  for (const name of ["OPENCODE_SERVER_PASSWORD", "GOOGLE_GENERATIVE_AI_API_KEY", "GH_TOKEN", "GITHUB_TOKEN"]) {
+  for (const name of ["OPENCODE_PASSWORD", "GOOGLE_GENERATIVE_AI_API_KEY", "GH_TOKEN", "GITHUB_TOKEN",
+    "LUNCHMONEY_API_TOKEN", "GRAFANA_SERVICE_ACCOUNT_TOKEN"]) {
     const file = env[`${name}_FILE`];
     if (!file) continue;
     if (env[name]) throw new Error(`Set either ${name} or ${name}_FILE, not both`);
     try {
-      if (!statSync(file).isFile() || statSync(file).size > 16384) throw new Error();
+      const stat = statSync(file);
+      if (!stat.isFile() || stat.size > 16384) throw new Error();
       env[name] = readFileSync(file, "utf8").replace(/\r?\n$/, "");
     } catch {
       throw new Error(`Cannot read ${name}_FILE`);
@@ -16,14 +18,13 @@ export function loadSecrets(input) {
     if (!env[name] || /[\r\n\0]/.test(env[name])) throw new Error(`Invalid ${name}_FILE contents`);
     delete env[`${name}_FILE`];
   }
-  const password = env.OPENCODE_SERVER_PASSWORD;
+  const password = env.OPENCODE_PASSWORD;
   if (!password || password.length < 32 || password.length > 4096 || /[\r\n\0]/.test(password)) {
-    throw new Error("OPENCODE_SERVER_PASSWORD must be 32–4096 characters; generate it with openssl rand -hex 32");
+    throw new Error("OPENCODE_PASSWORD must be 32–4096 characters; generate it with openssl rand -hex 32");
   }
   if (env.OPENCODE_SERVER_USERNAME && env.OPENCODE_SERVER_USERNAME !== "opencode") {
     throw new Error("OpenCode V2 requires username opencode");
   }
-  env.OPENCODE_PASSWORD = password;
   return env;
 }
 
@@ -63,5 +64,5 @@ export function settings(env) {
 }
 
 export function authorization(env) {
-  return `Basic ${Buffer.from(`opencode:${env.OPENCODE_SERVER_PASSWORD}`).toString("base64")}`;
+  return `Basic ${Buffer.from(`opencode:${env.OPENCODE_PASSWORD}`).toString("base64")}`;
 }

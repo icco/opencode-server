@@ -5,6 +5,30 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadSecrets, settings } from "../web/settings.mjs";
 
+test("native V2 password configuration remains usable by the server and CLI", () => {
+  const password = "native-password-".repeat(4);
+  assert.equal(loadSecrets({ OPENCODE_PASSWORD: password }).OPENCODE_PASSWORD, password);
+  for (const value of ["", "short", `${password}\n`, "x".repeat(4097)]) {
+    assert.throws(() => loadSecrets({ OPENCODE_PASSWORD: value }));
+  }
+});
+
+test("native password and MCP tokens support mutually exclusive file secrets", () => {
+  const dir = mkdtempSync(join(tmpdir(), "opencode-native-secrets-"));
+  try {
+    const file = join(dir, "secret");
+    const password = "native-password-".repeat(4);
+    writeFileSync(file, password + "\n", { mode: 0o600 });
+    const result = loadSecrets({ OPENCODE_PASSWORD_FILE: file,
+      LUNCHMONEY_API_TOKEN_FILE: file, GRAFANA_SERVICE_ACCOUNT_TOKEN_FILE: file });
+    for (const name of ["OPENCODE_PASSWORD", "LUNCHMONEY_API_TOKEN", "GRAFANA_SERVICE_ACCOUNT_TOKEN"]) {
+      assert.equal(result[name], password);
+      assert.equal(result[`${name}_FILE`], undefined);
+      assert.throws(() => loadSecrets({ OPENCODE_PASSWORD: password, [name]: password, [`${name}_FILE`]: file }), /not both/);
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test("public hosting rejects unsafe origins, trust-all proxies and port collisions", () => {
   for (const url of ["http://public.example", "https://user:pass@example.com", "https://example.com/opencode/",
     "https://example.com/?secret=value", "https://example.com/#fragment", "file:///tmp/test"]) {
@@ -27,15 +51,14 @@ test("file secrets are read without exposing values or silently overriding other
     const file = join(dir, "password");
     const password = "a".repeat(64);
     writeFileSync(file, password + "\n", { mode: 0o600 });
-    const result = loadSecrets({ OPENCODE_SERVER_PASSWORD_FILE: file });
+    const result = loadSecrets({ OPENCODE_PASSWORD_FILE: file });
     assert.equal(result.OPENCODE_PASSWORD, password);
-    assert.equal(result.OPENCODE_SERVER_PASSWORD, password);
-    assert.equal(result.OPENCODE_SERVER_PASSWORD_FILE, undefined);
-    assert.throws(() => loadSecrets({ OPENCODE_SERVER_PASSWORD: password, OPENCODE_SERVER_PASSWORD_FILE: file }), /not both/);
+    assert.equal(result.OPENCODE_PASSWORD_FILE, undefined);
+    assert.throws(() => loadSecrets({ OPENCODE_PASSWORD: password, OPENCODE_PASSWORD_FILE: file }), /not both/);
     for (const value of ["", "short", `${password}\nmalicious`, "x".repeat(20000)]) {
       writeFileSync(file, value);
-      assert.throws(() => loadSecrets({ OPENCODE_SERVER_PASSWORD_FILE: file }), error => !error.message.includes(password));
+      assert.throws(() => loadSecrets({ OPENCODE_PASSWORD_FILE: file }), error => !error.message.includes(password));
     }
-    assert.throws(() => loadSecrets({ OPENCODE_SERVER_PASSWORD: password, OPENCODE_SERVER_USERNAME: "admin" }));
+    assert.throws(() => loadSecrets({ OPENCODE_PASSWORD: password, OPENCODE_SERVER_USERNAME: "admin" }));
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

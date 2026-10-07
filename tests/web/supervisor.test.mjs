@@ -41,7 +41,7 @@ process.exit(process.argv.includes('validate') ? 0 : 2);
 `, { mode: 0o700 });
   const webPort = await port();
   const env = { PATH: process.env.PATH, HOME: dir, XDG_STATE_HOME: join(dir, "state"),
-    OPENCODE_SERVER_PASSWORD: password, OPENCODE_PASSWORD: password,
+    OPENCODE_PASSWORD: password,
     OPENCODE_WEB_PORT: String(webPort), OPENCODE_BACKEND_PORT: String(await port()) };
   const module = fileURLToPath(new URL("../../web/supervisor.mjs", import.meta.url));
   const runner = join(dir, "runner.mjs");

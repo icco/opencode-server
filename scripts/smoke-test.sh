@@ -46,7 +46,7 @@ status=0
 timeout 15 docker run --rm "$image" || status=$?
 test "$status" = 1
 status=0
-timeout 15 docker run --rm -e OPENCODE_SERVER_PASSWORD=short "$image" || status=$?
+timeout 15 docker run --rm -e OPENCODE_PASSWORD=short "$image" || status=$?
 test "$status" = 1
 
 secret_file=$(mktemp)
@@ -65,7 +65,7 @@ docker run -d --name "$name" \
   --pids-limit 512 --memory 4g --cpus 2 \
   -p 127.0.0.1::4096 \
   --mount "type=bind,source=$secret_file,target=/run/secrets/opencode_password,readonly" \
-  -e OPENCODE_SERVER_PASSWORD_FILE=/run/secrets/opencode_password \
+  -e OPENCODE_PASSWORD_FILE=/run/secrets/opencode_password \
   -e LUNCHMONEY_API_TOKEN=catalog-test-only \
   "$image"
 port=$(docker port "$name" 4096/tcp | cut -d: -f2)
@@ -95,9 +95,7 @@ fi
 docker exec "$name" sh -ec '
   cmp /etc/opencode/orchestra.jsonc "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
   cmp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
-  OPENCODE_PASSWORD=$(cat "$OPENCODE_SERVER_PASSWORD_FILE")
-  export OPENCODE_PASSWORD
-  opencode api get /api/info --server http://localhost:4096
+  /usr/local/bin/entrypoint.sh opencode api get /api/info --server http://localhost:4096
 '
 OPENCODE_TEST_URL="$url" OPENCODE_TEST_HOST=localhost:4096 OPENCODE_PASSWORD="$password" \
   node scripts/test-router-integration.mjs

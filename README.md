@@ -8,7 +8,7 @@ Gemini, GitHub Copilot, Orchestra, quota reporting, and WakaTime.
 ## Run locally
 
 ```sh
-export OPENCODE_SERVER_PASSWORD="$(openssl rand -hex 32)"
+export OPENCODE_PASSWORD="$(openssl rand -hex 32)"
 docker compose up -d
 ```
 
@@ -60,10 +60,18 @@ is not a multi-tenant sandbox, and outbound host/LAN access is unrestricted.
 ## Credentials and Git access
 
 Secrets can come from environment variables or read-only files outside the
-workspace. Supported file variables are `OPENCODE_SERVER_PASSWORD_FILE`,
-`GOOGLE_GENERATIVE_AI_API_KEY_FILE`, `GH_TOKEN_FILE`, and `GITHUB_TOKEN_FILE`.
+workspace. Supported file variables are `OPENCODE_PASSWORD_FILE`,
+`GOOGLE_GENERATIVE_AI_API_KEY_FILE`, `GH_TOKEN_FILE`, `GITHUB_TOKEN_FILE`,
+`LUNCHMONEY_API_TOKEN_FILE`, and `GRAFANA_SERVICE_ACCOUNT_TOKEN_FILE`.
 Make files readable by UID 1000; set either the direct value or `_FILE`, not both.
 Recreate the container after changing credentials.
+
+For CLI operations inside the container, use the entrypoint to load file secrets
+and connect to the authenticated private backend (independent of the public Host):
+
+```sh
+docker compose exec opencode /usr/local/bin/entrypoint.sh opencode api get /api/mcp --server http://127.0.0.1:4097
+```
 
 Authenticate `gh` once for HTTPS Git access (separate from Copilot login):
 
@@ -157,7 +165,7 @@ Native diagnostics are private, rotated at 4 MiB, in
 | 401 | OpenCode credentials; password rotation invalidates sessions. |
 | 403 | Origin, trusted proxy address, and `X-Forwarded-Proto`. |
 | 421 | Host must match `OPENCODE_PUBLIC_URL`. |
-| 429 | Client IP reached 20 authentication failures in ten minutes; respect `Retry-After`. |
+| 429 | Client IP reached 20 authentication failures in ten minutes; respect `Retry-After`. Shared NAT clients share this limit. |
 
 ## Development
 

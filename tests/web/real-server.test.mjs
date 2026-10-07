@@ -21,7 +21,7 @@ test("real OpenCode V2 works through the gateway with native auth, file-secret h
   const env = { PATH: process.env.PATH, HOME: dir, XDG_STATE_HOME: join(dir, "state"),
     XDG_CONFIG_HOME: join(dir, "config"), XDG_DATA_HOME: join(dir, "data"), XDG_CACHE_HOME: join(dir, "cache"),
     OPENCODE_CONFIG: config, OPENCODE_CONFIG_PROJECT_DISABLE: "1",
-    OPENCODE_SERVER_PASSWORD_FILE: secret, OPENCODE_WEB_PORT: String(webPort), OPENCODE_BACKEND_PORT: String(backendPort) };
+    OPENCODE_PASSWORD_FILE: secret, OPENCODE_WEB_PORT: String(webPort), OPENCODE_BACKEND_PORT: String(backendPort) };
   const runner = join(dir, "runner.mjs");
   await writeFile(runner, `import { supervise } from ${JSON.stringify(fileURLToPath(new URL("../../web/supervisor.mjs", import.meta.url)))};
 import { loadSecrets } from ${JSON.stringify(fileURLToPath(new URL("../../web/settings.mjs", import.meta.url)))};
@@ -70,6 +70,10 @@ process.exitCode = await supervise(loadSecrets(process.env), {server:'opencode',
   assert.match(ui.headers["content-security-policy"], /frame-ancestors 'none'/);
   const health = spawn(process.execPath, [fileURLToPath(new URL("../../web/healthcheck.mjs", import.meta.url))], { env, stdio: "pipe" });
   assert.equal((await once(health, "exit"))[0], 0);
+  const unhealthy = spawn(process.execPath, [fileURLToPath(new URL("../../web/healthcheck.mjs", import.meta.url))], {
+    env: { ...env, OPENCODE_PASSWORD_FILE: "", OPENCODE_PASSWORD: "incorrect-health-password-".repeat(2) }, stdio: "pipe",
+  });
+  assert.equal((await once(unhealthy, "exit"))[0], 1);
   child.kill("SIGTERM");
   assert.equal((await exited)[0], 0);
   assert.ok(!logs.includes(password));
