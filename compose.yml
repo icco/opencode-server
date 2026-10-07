@@ -17,8 +17,7 @@ services:
       LUNCHMONEY_API_TOKEN: ${LUNCHMONEY_API_TOKEN:-}
       GRAFANA_URL: ${GRAFANA_URL:-}
       GRAFANA_SERVICE_ACCOUNT_TOKEN: ${GRAFANA_SERVICE_ACCOUNT_TOKEN:-}
-      # Map the existing .env name to V2's native variable, including for docker exec.
-      OPENCODE_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Set OPENCODE_SERVER_PASSWORD in .env}
+      OPENCODE_PASSWORD: ${OPENCODE_PASSWORD:?Set OPENCODE_PASSWORD}
     ports:
       - 127.0.0.1:4096:4096
     volumes:

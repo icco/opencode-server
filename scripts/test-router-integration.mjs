@@ -11,7 +11,7 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const dockerfile = await readFile(join(root, "Dockerfile"), "utf8");
 const version = process.env.OPENCODE_TEST_VERSION ?? dockerfile.match(/^ARG OPENCODE_VERSION=(.+)$/m)[1];
 const external = process.env.OPENCODE_TEST_URL;
-const password = external ? process.env.OPENCODE_PASSWORD ?? process.env.OPENCODE_SERVER_PASSWORD : randomBytes(32).toString("hex");
+const password = external ? process.env.OPENCODE_PASSWORD : randomBytes(32).toString("hex");
 assert.ok(password);
 const home = external ? undefined : await mkdtemp(join(tmpdir(), "opencode-v2-test-"));
 const directory = external ? "/data/workspace" : join(home, "workspace");

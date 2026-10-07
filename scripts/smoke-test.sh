@@ -85,14 +85,12 @@ OPENCODE_TEST_URL="$url" OPENCODE_PASSWORD="$password" \
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
 
-# Re-entering startup must preserve edits and migrate a legacy global JSON policy.
+# Re-entering startup must preserve persistent edits.
 docker exec "$name" sh -ec '
   printf "\nPersistent test instructions\n" >> "$XDG_CONFIG_HOME/opencode/AGENTS.md"
   cp "$XDG_CONFIG_HOME/opencode/AGENTS.md" "$HOME/expected-agents.md"
-  mv "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" "$XDG_CONFIG_HOME/opencode/orchestra.json"
   /usr/local/bin/entrypoint.sh true
   cmp "$HOME/expected-agents.md" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
-  cmp "$XDG_CONFIG_HOME/opencode/orchestra.json" "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
   printf "\n// Persistent policy edit\n" >> "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
   cp "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" "$HOME/expected-orchestra.jsonc"
   /usr/local/bin/entrypoint.sh true

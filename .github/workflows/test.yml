@@ -31,5 +31,5 @@ jobs:
           pnpm test
       - name: Validate Compose
         env:
-          OPENCODE_SERVER_PASSWORD: validation-only-not-a-deployment-password
+          OPENCODE_PASSWORD: validation-only-not-a-deployment-password
         run: docker compose config --quiet
