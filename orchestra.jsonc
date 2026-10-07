@@ -1,5 +1,5 @@
 {
-  "$schema": "https://unpkg.com/@oeronteros-1/opencode-orchestra@3.0.4/schema/opencode-orchestra.schema.json",
+  "$schema": "https://unpkg.com/@oeronteros-1/opencode-orchestra@3.0.11/schema/opencode-orchestra.schema.json",
   "budget": "quality",
   "models": {
     "strategy": "auto",
@@ -37,5 +37,6 @@
     "exposeWorkers": false
   },
   "permissions": { "autoAcceptAll": false },
+  "superpowers": { "compatibility": false },
   "telemetry": { "enabled": true, "storeTexts": false }
 }

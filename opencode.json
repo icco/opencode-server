@@ -3,14 +3,8 @@
   "update": "disable",
   "model": "github-copilot/gpt-6-astra",
   "default_agent": "orch-lead",
-  "instructions": [
-    "instructions.md"
-  ],
-  "lsp": true,
   "compaction": {
-    "auto": true,
-    "prune": true,
-    "reserved": 10000
+    "buffer": 10000
   },
   "agents": {
     "title": {
@@ -20,66 +14,18 @@
       "model": "github-copilot/gpt-6-astra"
     },
     "orch-lead": {
-      "mode": "primary",
       "permissions": [
         {
           "action": "grafana_*",
           "resource": "*",
           "effect": "allow"
+        },
+        {
+          "action": "lunchmoney_*",
+          "resource": "*",
+          "effect": "allow"
         }
       ]
-    },
-    "orch-repo": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-docs": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-tests": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-research": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-critic": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-security": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-visual-reference": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-visual-generate": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-visual-review": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-editor": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-integrator": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-merge": {
-      "mode": "subagent",
-      "hidden": true
-    },
-    "orch-judge": {
-      "mode": "subagent",
-      "hidden": true
     }
   },
   "mcp": {
@@ -87,7 +33,9 @@
       "lunchmoney": {
         "type": "local",
         "command": [
-          "npx -y @akutishevsky/lunchmoney-mcp"
+          "npx",
+          "-y",
+          "@akutishevsky/lunchmoney-mcp@3.0.0"
         ],
         "environment": {
           "LUNCHMONEY_API_TOKEN": "{env:LUNCHMONEY_API_TOKEN}"
@@ -117,8 +65,8 @@
   "plugins": [
     "opencode-gemini-auth@2.0.1",
     "opencode-wakatime@1.4.0",
-    "@oeronteros-1/opencode-orchestra@3.0.4",
-    "@cardinal4/opencode-quota@5.1.0"
+    "@oeronteros-1/opencode-orchestra@3.0.11",
+    "@slkiser/opencode-quota@5.0.2"
   ],
   "experimental": {
     "policies": [
@@ -139,7 +87,6 @@
       }
     ]
   },
-  "share": "disabled",
   "permissions": [
     {
       "action": "*",

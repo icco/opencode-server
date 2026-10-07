@@ -2,13 +2,15 @@
 set -eu
 umask 077
 
-if [ -z "${OPENCODE_SERVER_PASSWORD:-}" ]; then
-  echo "OPENCODE_SERVER_PASSWORD must be set" >&2
+# Accept the old image variable for direct docker run users.
+export OPENCODE_PASSWORD="${OPENCODE_PASSWORD:-${OPENCODE_SERVER_PASSWORD:-}}"
+if [ -z "$OPENCODE_PASSWORD" ]; then
+  echo "OPENCODE_PASSWORD must be set" >&2
   exit 1
 fi
 
-if [ "${#OPENCODE_SERVER_PASSWORD}" -lt 32 ]; then
-  echo "OPENCODE_SERVER_PASSWORD must contain at least 32 characters; generate it with openssl rand -hex 32" >&2
+if [ "${#OPENCODE_PASSWORD}" -lt 32 ]; then
+  echo "OPENCODE_PASSWORD must contain at least 32 characters; generate it with openssl rand -hex 32" >&2
   exit 1
 fi
 
@@ -20,12 +22,19 @@ if [ "${OPENCODE_SERVER_USERNAME:-opencode}" != opencode ]; then
   echo "OpenCode V2 requires username opencode; remove OPENCODE_SERVER_USERNAME" >&2
   exit 1
 fi
-export OPENCODE_PASSWORD="$OPENCODE_SERVER_PASSWORD"
+
+# V2 discovers global AGENTS.md; the legacy instructions config is ignored.
+if [ ! -e "$XDG_CONFIG_HOME/opencode/AGENTS.md" ]; then
+  cp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+fi
 
 # Seed the upstream policy once, preserving persistent user overrides.
-if [ ! -e "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" ] && \
-   [ ! -e "$XDG_CONFIG_HOME/opencode/orchestra.json" ]; then
-  cp /etc/opencode/orchestra.jsonc "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+if [ ! -e "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" ]; then
+  if [ -f "$XDG_CONFIG_HOME/opencode/orchestra.json" ]; then
+    cp "$XDG_CONFIG_HOME/opencode/orchestra.json" "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+  else
+    cp /etc/opencode/orchestra.jsonc "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+  fi
 fi
 
 # Use gh credentials for HTTPS Git operations, including before the first login.

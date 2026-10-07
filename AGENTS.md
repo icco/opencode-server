@@ -1,4 +1,4 @@
-# Opencode Instructions
+# OpenCode Instructions
 
 ## Git Rules
 
