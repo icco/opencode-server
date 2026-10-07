@@ -2,16 +2,27 @@
 // so empty config seeds can overwrite Orchestra's generated instructions/models.
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { parse, printParseErrorCode } from "jsonc-parser";
 const upstream = new URL("./", import.meta.resolve("@oeronteros-1/opencode-orchestra"));
 const { loadConfig } = await import(new URL("config/load.js", upstream));
 const { createAgentSet } = await import(new URL("agents/build.js", upstream));
 const { loadPrompts } = await import(new URL("prompts/load.js", upstream));
 
+export async function readConfig(path = new URL("../opencode.jsonc", import.meta.url)) {
+  const errors = [];
+  const config = parse((await readFile(path, "utf8")).replace(/^\uFEFF/, ""), errors, { allowTrailingComma: true });
+  if (errors.length) {
+    throw new Error(`Invalid config ${path}: ${errors.map(error =>
+      `${printParseErrorCode(error.error)} at offset ${error.offset}`).join(", ")}`);
+  }
+  return config;
+}
+
 export async function buildConfig({
-  configPath = new URL("../opencode.json", import.meta.url),
+  configPath = new URL("../opencode.jsonc", import.meta.url),
   policyPath = new URL("../orchestra.jsonc", import.meta.url),
 } = {}) {
-  const config = JSON.parse(await readFile(configPath));
+  const config = await readConfig(configPath);
   const { config: policy } = await loadConfig(process.cwd(), {
     configFile: policyPath instanceof URL ? fileURLToPath(policyPath) : policyPath,
   });

@@ -10,6 +10,7 @@
     "@oeronteros-1/opencode-orchestra": "3.0.11",
     "@opencode/plugin": "2.0.24",
     "@opencode/schema": "2.0.24",
-    "effect": "4.0.0-rc.112"
+    "effect": "4.0.0-rc.112",
+    "jsonc-parser": "3.3.1"
   }
 }

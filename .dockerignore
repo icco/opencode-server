@@ -3,7 +3,7 @@
 !entrypoint.sh
 !healthcheck.sh
 !AGENTS.md
-!opencode.json
+!opencode.jsonc
 !orchestra.jsonc
 !package.json
 !pnpm-lock.yaml

@@ -6,9 +6,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Schema } from "effect";
 import { Config } from "@opencode/schema/config";
-import { buildConfig } from "../scripts/build-config.mjs";
+import { buildConfig, readConfig } from "../scripts/build-config.mjs";
 
-const config = JSON.parse(await readFile(new URL("../opencode.json", import.meta.url)));
+const config = await readConfig();
 const upstream = new URL("./", import.meta.resolve("@oeronteros-1/opencode-orchestra"));
 const { orchestraConfigSchema } = await import(new URL("config/schema.js", upstream));
 const { loadConfig } = await import(new URL("config/load.js", upstream));
@@ -77,12 +77,12 @@ test("MCP permissions survive materialization without changing worker permission
 test("materialization honors explicit agent overrides and real JSONC policies", async () => {
   const home = await mkdtemp(join(tmpdir(), "opencode-config-test-"));
   try {
-    const configPath = join(home, "opencode.json");
+    const configPath = join(home, "opencode.jsonc");
     const policyPath = join(home, "orchestra.jsonc");
     const permissions = [{ action: "execute", resource: "*", effect: "deny" }];
-    await writeFile(configPath, JSON.stringify({ agents: {
+    await writeFile(configPath, "// Agent overrides\n" + JSON.stringify({ agents: {
       "orch-docs": { model: "google/gemini-3.1-pro-preview", system: "Custom docs guidance", permissions },
-    } }));
+    } }).replace(/}$/, ",}"));
     await writeFile(policyPath, '{ // Keep comments and trailing commas valid.\n"superpowers": {"compatibility": false,}, "orchestration": {"exposeWorkers": true,},}');
     const runtime = await buildConfig({ configPath, policyPath });
     Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(runtime);
@@ -91,6 +91,8 @@ test("materialization honors explicit agent overrides and real JSONC policies", 
     assert.deepEqual(runtime.agents["orch-docs"].permissions.at(-1), permissions[0]);
     assert.equal(runtime.agents["orch-docs"].hidden, false);
     assert.ok(!runtime.agents["orch-lead"].system.includes("Superpowers workflow"));
+    await writeFile(configPath, '{"model": }');
+    await assert.rejects(buildConfig({ configPath, policyPath }), /Invalid config/);
   } finally {
     await rm(home, { recursive: true, force: true });
   }

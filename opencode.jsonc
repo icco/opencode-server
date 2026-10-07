@@ -6,6 +6,7 @@
   "compaction": {
     "buffer": 10000
   },
+  // Orchestra definitions are generated during the image build; these are overrides.
   "agents": {
     "title": {
       "model": "github-copilot/gpt-5.4-mini"
