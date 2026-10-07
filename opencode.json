@@ -75,6 +75,15 @@
   },
   "mcp": {
     "servers": {
+      "lunchmoney": {
+        "type": "local",
+        "command": [
+          "npx -y @akutishevsky/lunchmoney-mcp"
+        ],
+        "environment": {
+          "LUNCHMONEY_API_TOKEN": "{env:LUNCHMONEY_API_TOKEN}"
+        }
+      },
       "grafana": {
         "type": "local",
         "command": [
