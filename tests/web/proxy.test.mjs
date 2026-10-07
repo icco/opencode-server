@@ -31,7 +31,13 @@ test("foreign/null/duplicate origins and forged hosts are rejected", async t => 
     }
   }
   assert.equal((await p.send("/api/info", { Origin: p.s.origin }, "POST")).status, 200);
-  assert.equal((await p.send("/api/info", { Host: "attacker.example" })).status, 421);
+  for (const [headers, status] of [[{ Host: "attacker.example" }, 421], [{ Origin: "null" }, 403]]) {
+    const denied = await p.send("/_assets/app.js", headers);
+    assert.equal(denied.status, status);
+    assert.equal(denied.headers["cache-control"], "no-store");
+    assert.equal(denied.headers["x-content-type-options"], "nosniff");
+    assert.match(denied.headers["content-security-policy"], /frame-ancestors 'none'/);
+  }
 });
 
 test("only explicit proxy peers can supply client addresses and HTTPS provenance", async t => {
@@ -66,6 +72,7 @@ test("twenty backend authentication failures throttle that client without counti
   const blocked = await p.send("/api/info", ip);
   assert.equal(blocked.status, 429);
   assert.equal(blocked.headers["retry-after"], "600");
+  assert.equal(blocked.headers["cache-control"], "no-store");
   assert.equal((await p.send("/api/info", { "X-Forwarded-For": "203.0.113.56" })).status, 200);
   assert.equal((await p.send("/api/info", { "X-Forwarded-For": "192.0.2.99, 203.0.113.55" })).status, 429);
 });
@@ -110,7 +117,11 @@ test("access and transport-error logs contain no credential-bearing URLs or head
   } });
   const headers = { Authorization: auth, Cookie: "session=cookie-secret-marker", Referer: "https://code.example/?auth_token=referer-secret-marker" };
   await p.send("/api/info?auth_token=query-secret-marker", headers);
-  assert.equal((await p.send("/auth/connect/pairing-secret-marker", headers)).status, 502);
+  const failed = await p.send("/auth/connect/pairing-secret-marker", headers);
+  assert.equal(failed.status, 502);
+  assert.equal(failed.headers["cache-control"], "no-store");
+  assert.equal(failed.headers["x-frame-options"], "DENY");
+  assert.match(failed.headers["content-security-policy"], /frame-ancestors 'none'/);
   await p.stop();
   for (const marker of [auth, "query-secret-marker", "referer-secret-marker", "pairing-secret-marker", "response-secret-marker", "cookie-secret-marker"]) {
     assert.ok(!p.logs().includes(marker), `logs leaked ${marker}`);

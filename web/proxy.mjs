@@ -15,6 +15,9 @@ export function proxyConfig(s) {
   const noStore = match => ({ handler: "headers", response: {
     set: { "Cache-Control": ["no-store"] }, require: match, deferred: true,
   } });
+  const protect = { handler: "headers", response: { set: security, deferred: true,
+    add: { "Content-Security-Policy": ["frame-ancestors 'none'; base-uri 'self'; form-action 'self'"] },
+  } };
   return JSON.stringify({
     admin: { disabled: true },
     logging: { logs: {
@@ -26,9 +29,7 @@ export function proxyConfig(s) {
       read_header_timeout: 15000000000, idle_timeout: 30000000000,
       logs: { default_logger_name: "gateway" },
       routes: [
-        { handle: [{ handler: "headers", response: { set: security, deferred: true,
-          add: { "Content-Security-Policy": ["frame-ancestors 'none'; base-uri 'self'; form-action 'self'"] },
-        } }, noStore({ status_code: [4, 5] })] },
+        { handle: [protect, noStore({ status_code: [4, 5] })] },
         { match: [{ path: ["/api", "/api/*", "/auth", "/auth/*", "/openapi.json"] }], handle: [noStore({})] },
         { handle: [
           { handler: "opencode_guard", origin: s.origin, trusted_proxies: s.proxies },
@@ -42,9 +43,7 @@ export function proxyConfig(s) {
         ] },
       ],
       errors: { routes: [{ handle: [
-        { handler: "headers", response: { set: { ...security, "Cache-Control": ["no-store"] }, deferred: true,
-          add: { "Content-Security-Policy": ["frame-ancestors 'none'; base-uri 'self'; form-action 'self'"] },
-        } },
+        protect, noStore({}),
         { handler: "static_response", status_code: "{http.error.status_code}", body: "Request failed" },
       ] }] },
     } } } },
