@@ -3,6 +3,15 @@
   "update": "disable",
   "model": "github-copilot/gpt-6-astra",
   "default_agent": "orch-lead",
+  "instructions": [
+    "instructions.md"
+  ],
+  "lsp": true,
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 10000
+  },
   "agents": {
     "title": {
       "model": "github-copilot/gpt-5.4-mini"
