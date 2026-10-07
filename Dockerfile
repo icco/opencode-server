@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
-ARG OPENCODE_VERSION=2.0.18
+ARG OPENCODE_VERSION=2.0.24
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.6.0
 ARG TARGETARCH
