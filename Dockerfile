@@ -58,6 +58,7 @@ ENV HOME=/data \
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY orchestra.jsonc /etc/opencode/orchestra.jsonc
+COPY instructions.md /etc/opencode/instructions.md
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
