@@ -3,16 +3,20 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Schema } from "effect";
 import { Config } from "@opencode/schema/config";
 import { buildConfig } from "../scripts/build-config.mjs";
 
 const config = JSON.parse(await readFile(new URL("../opencode.json", import.meta.url)));
-const policy = JSON.parse(await readFile(new URL("../orchestra.jsonc", import.meta.url)));
 const upstream = new URL("./", import.meta.resolve("@oeronteros-1/opencode-orchestra"));
 const { orchestraConfigSchema } = await import(new URL("config/schema.js", upstream));
+const { loadConfig } = await import(new URL("config/load.js", upstream));
 const { createAgentSet } = await import(new URL("agents/build.js", upstream));
 const { loadPrompts } = await import(new URL("prompts/load.js", upstream));
+const { config: policy } = await loadConfig(process.cwd(), {
+  configFile: fileURLToPath(new URL("../orchestra.jsonc", import.meta.url)),
+});
 
 test("configuration validates strictly against the installed V2 schema", () => {
   const parsed = Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(config);
