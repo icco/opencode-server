@@ -1,23 +1,49 @@
 // Materialize upstream agent definitions: V2 replays config after plugin transforms,
 // so empty config seeds can overwrite Orchestra's generated instructions/models.
 import { readFile, writeFile } from "node:fs/promises";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { parse, printParseErrorCode } from "jsonc-parser";
 const upstream = new URL("./", import.meta.resolve("@oeronteros-1/opencode-orchestra"));
-const { orchestraConfigSchema } = await import(new URL("config/schema.js", upstream));
+const { loadConfig } = await import(new URL("config/load.js", upstream));
 const { createAgentSet } = await import(new URL("agents/build.js", upstream));
 const { loadPrompts } = await import(new URL("prompts/load.js", upstream));
 
-export async function buildConfig() {
-  const config = JSON.parse(await readFile(new URL("../opencode.json", import.meta.url)));
-  const policy = orchestraConfigSchema.parse(JSON.parse(await readFile(new URL("../orchestra.jsonc", import.meta.url))));
+export async function readConfig(path = new URL("../opencode.jsonc", import.meta.url)) {
+  const errors = [];
+  const config = parse((await readFile(path, "utf8")).replace(/^\uFEFF/, ""), errors, { allowTrailingComma: true });
+  if (errors.length) {
+    throw new Error(`Invalid config ${path}: ${errors.map(error =>
+      `${printParseErrorCode(error.error)} at offset ${error.offset}`).join(", ")}`);
+  }
+  return config;
+}
+
+export async function buildConfig({
+  configPath = new URL("../opencode.jsonc", import.meta.url),
+  policyPath = new URL("../orchestra.jsonc", import.meta.url),
+} = {}) {
+  const config = await readConfig(configPath);
+  const { config: policy } = await loadConfig(process.cwd(), {
+    configFile: policyPath instanceof URL ? fileURLToPath(policyPath) : policyPath,
+  });
+  config.agents ??= {};
   for (const [name, agent] of Object.entries(createAgentSet(policy, await loadPrompts()))) {
+    const override = config.agents[name] ?? {};
     config.agents[name] = {
-      ...config.agents[name], description: agent.description, system: agent.prompt, model: agent.model,
-      permissions: [...Object.entries(agent.permission).flatMap(([action, rules]) => {
-        action = ({ bash: "shell", task: "subagent", write: "edit", patch: "edit" })[action] ?? action;
-        return typeof rules === "string" ? [{ action, resource: "*", effect: rules }] :
-          Object.entries(rules).map(([resource, effect]) => ({ action, resource, effect }));
-      }), ...(config.agents[name]?.permissions ?? [])],
+      mode: agent.mode, hidden: agent.hidden,
+      description: agent.description, system: agent.prompt, model: agent.model,
+      ...override,
+      permissions: [
+        ...Object.entries(agent.permission).flatMap(([action, rules]) => {
+          if (action === "list" || action === "lsp") return [];
+          action = ({ bash: "shell", task: "subagent", write: "edit", patch: "edit" })[action] ?? action;
+          return typeof rules === "string" ? [{ action, resource: "*", effect: rules }] :
+            Object.entries(rules).map(([resource, effect]) => ({ action, resource, effect }));
+        }),
+        // MCP uses Code Mode in V2. Nested calls still enforce each tool's rules.
+        { action: "execute", resource: "*", effect: "allow" },
+        ...(override.permissions ?? []),
+      ],
     };
   }
   return JSON.parse(JSON.stringify(config));

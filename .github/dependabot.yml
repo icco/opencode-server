@@ -1,5 +1,13 @@
 version: 2
 updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      opencode:
+        patterns:
+          - '@opencode/*'
   - package-ecosystem: docker
     directory: /
     open-pull-requests-limit: 10

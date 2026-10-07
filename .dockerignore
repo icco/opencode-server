@@ -2,7 +2,8 @@
 !Dockerfile
 !entrypoint.sh
 !healthcheck.sh
-!opencode.json
+!AGENTS.md
+!opencode.jsonc
 !orchestra.jsonc
 !package.json
 !pnpm-lock.yaml
