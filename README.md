@@ -80,8 +80,14 @@ api_key = <your key from https://wakatime.com/api-key>
 - **Context7:** current library documentation via `https://mcp.context7.com/mcp`.
   If OpenCode reports authentication is needed, open `/mcps`, select Context7,
   and sign in. OAuth credentials persist in `/data`.
+- **Karakeep:** the official [MCP](https://docs.karakeep.app/integrations/mcp) v0.33.1
+  uses `KARAKEEP_API_ADDR` (Compose defaults to `https://hoard.natwelch.com`) and
+  `KARAKEEP_API_KEY` from Karakeep's **Settings → API Keys**. Inject the key and
+  recreate the container. It supports search/read and **create, update, and delete**
+  operations. Verify with a small bookmark search; connection status alone does
+  not validate the key.
 
-All three integrations use V2 Code Mode. The default `orch-lead` agent can use them;
+All four integrations use V2 Code Mode. The default `orch-lead` agent can use them;
 docs/research workers can use Context7. Without a Lunch Money token its server
 cannot start. Check connections with:
 
@@ -166,6 +172,6 @@ gh attestation verify oci://ghcr.io/icco/opencode-server:main --owner icco
 
 The integration check needs the OpenCode version pinned in `Dockerfile`; it uses
 isolated data on port 4197 (`ROUTER_TEST_PORT` overrides) and requests no inference.
-It checks every plugin, agent/MCP permissions, Lunch Money's stdio handshake, and
+It checks every plugin, agent/MCP permissions, Lunch Money/Karakeep stdio handshakes, and
 quota commands. Image smoke tests also check Grafana and need Node.js 26, Docker,
 Bash, curl, jq, OpenSSL, and `timeout`. CI runs them on amd64 and arm64.

@@ -51,6 +51,8 @@ docker run -d --name "$name" \
   -p 127.0.0.1::4096 \
   -e "OPENCODE_PASSWORD=$password" \
   -e LUNCHMONEY_API_TOKEN=catalog-test-only \
+  -e KARAKEEP_API_ADDR=http://127.0.0.1:1 \
+  -e KARAKEEP_API_KEY=catalog-test-only \
   "$image"
 cleanup() {
   docker logs "$name"

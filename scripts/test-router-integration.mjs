@@ -52,11 +52,12 @@ try {
     await copyFile(join(root, "AGENTS.md"), join(home, "config/opencode/AGENTS.md"));
     // Keep the host's config, database overrides, and credentials out of this server.
     const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
-      !/^(OPENCODE_|ORCHESTRA_|WAKATIME_|GRAFANA_|LUNCHMONEY_|GOOGLE_|GIT_CONFIG_|GH_|GITHUB_)|API_KEY|TOKEN/.test(key)));
+      !/^(OPENCODE_|ORCHESTRA_|WAKATIME_|GRAFANA_|LUNCHMONEY_|KARAKEEP_|GOOGLE_|GIT_CONFIG_|GH_|GITHUB_)|API_KEY|TOKEN/.test(key)));
     const env = { ...inherited, HOME: home, XDG_CONFIG_HOME: join(home, "config"),
       XDG_DATA_HOME: join(home, "data"), XDG_STATE_HOME: join(home, "state"), XDG_CACHE_HOME: join(home, "cache"),
       OPENCODE_CONFIG: join(home, "runtime.json"),
-      OPENCODE_PASSWORD: password, LUNCHMONEY_API_TOKEN: "catalog-test-only" };
+      OPENCODE_PASSWORD: password, LUNCHMONEY_API_TOKEN: "catalog-test-only",
+      KARAKEEP_API_ADDR: "http://127.0.0.1:1", KARAKEEP_API_KEY: "catalog-test-only" };
     child = spawn("opencode", ["serve", "--hostname", "127.0.0.1", "--port", new URL(url).port],
       { cwd: directory, env, stdio: ["ignore", "pipe", "pipe"] });
     child.on("error", error => { spawnError = error; });
@@ -93,16 +94,17 @@ try {
   function permission(agent, action) {
     return agent.permissions.filter(rule => new RegExp(`^${rule.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
   }
-  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "context7_query-docs"])
+  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "context7_query-docs"])
     assert.equal(permission(lead, action), "allow", `lead can use ${action}`);
   const docs = agents.find(a => a.id === "orch-docs");
   assert.equal(permission(docs, "execute"), "allow");
   assert.equal(permission(docs, "context7_query-docs"), "allow");
   assert.equal(permission(docs, "edit"), "deny");
+  assert.equal(permission(docs, "karakeep_search-bookmarks"), "deny");
   assert.ok(!lead.system.includes("Superpowers workflow"));
   await until(async () => {
     const { data } = await request("/api/mcp");
-    for (const name of external ? ["lunchmoney", "grafana"] : ["lunchmoney"]) {
+    for (const name of external ? ["lunchmoney", "grafana", "karakeep"] : ["lunchmoney", "karakeep"]) {
       assert.equal(data.find(server => server.name === name)?.status.status, "connected", JSON.stringify(data));
     }
     assert.ok(data.some(server => server.name === "context7"));
