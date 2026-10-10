@@ -4,9 +4,13 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Schema } from "effect";
+import { createRequire } from "node:module";
 import { Config } from "@opencode/schema/config";
 import { buildConfig, readConfig } from "../scripts/build-config.mjs";
+
+// Decode schemas with their own Effect runtime, not an independently updated one.
+const schemaRequire = createRequire(import.meta.resolve("@opencode/schema/config"));
+const { Schema } = await import(schemaRequire.resolve("effect"));
 
 const config = await readConfig();
 const upstream = new URL("./", import.meta.resolve("@oeronteros-1/opencode-orchestra"));
@@ -63,7 +67,7 @@ test("MCP permissions survive materialization without changing worker permission
     return runtime.agents[agent].permissions.filter(p =>
       new RegExp(`^${p.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
   }
-  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "context7_query-docs"])
+  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "context7_query-docs"])
     assert.equal(permission("orch-lead", action), "allow");
   for (const agent of ["orch-docs", "orch-research"]) {
     assert.equal(permission(agent, "execute"), "allow");
@@ -72,6 +76,8 @@ test("MCP permissions survive materialization without changing worker permission
     assert.equal(permission(agent, "shell"), "deny");
   }
   assert.equal(permission("orch-repo", "grafana_list_datasources"), "deny");
+  for (const agent of ["orch-repo", "orch-docs", "orch-research"])
+    assert.equal(permission(agent, "karakeep_search-bookmarks"), "deny");
 });
 
 test("materialization honors explicit agent overrides and real JSONC policies", async () => {
