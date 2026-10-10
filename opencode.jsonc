@@ -25,12 +25,29 @@
           "action": "lunchmoney_*",
           "resource": "*",
           "effect": "allow"
+        },
+        {
+          "action": "karakeep_*",
+          "resource": "*",
+          "effect": "allow"
         }
       ]
     }
   },
   "mcp": {
     "servers": {
+      "karakeep": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@karakeep/mcp@0.33.1"
+        ],
+        "environment": {
+          "KARAKEEP_API_ADDR": "{env:KARAKEEP_API_ADDR}",
+          "KARAKEEP_API_KEY": "{env:KARAKEEP_API_KEY}"
+        }
+      },
       "lunchmoney": {
         "type": "local",
         "command": [

@@ -67,6 +67,8 @@ docker run -d --name "$name" \
   --mount "type=bind,source=$secret_file,target=/run/secrets/opencode_password,readonly" \
   -e OPENCODE_PASSWORD_FILE=/run/secrets/opencode_password \
   -e LUNCHMONEY_API_TOKEN=catalog-test-only \
+  -e KARAKEEP_API_ADDR=http://127.0.0.1:1 \
+  -e KARAKEEP_API_KEY=catalog-test-only \
   "$image"
 port=$(docker port "$name" 4096/tcp | cut -d: -f2)
 url="http://127.0.0.1:$port"

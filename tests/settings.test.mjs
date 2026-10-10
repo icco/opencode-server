@@ -20,11 +20,31 @@ test("native password and MCP tokens support mutually exclusive file secrets", (
     const password = "native-password-".repeat(4);
     writeFileSync(file, password + "\n", { mode: 0o600 });
     const result = loadSecrets({ OPENCODE_PASSWORD_FILE: file,
-      LUNCHMONEY_API_TOKEN_FILE: file, GRAFANA_SERVICE_ACCOUNT_TOKEN_FILE: file });
-    for (const name of ["OPENCODE_PASSWORD", "LUNCHMONEY_API_TOKEN", "GRAFANA_SERVICE_ACCOUNT_TOKEN"]) {
+      LUNCHMONEY_API_TOKEN_FILE: file, GRAFANA_SERVICE_ACCOUNT_TOKEN_FILE: file, KARAKEEP_API_KEY_FILE: file });
+    for (const name of ["OPENCODE_PASSWORD", "LUNCHMONEY_API_TOKEN", "GRAFANA_SERVICE_ACCOUNT_TOKEN", "KARAKEEP_API_KEY"]) {
       assert.equal(result[name], password);
       assert.equal(result[`${name}_FILE`], undefined);
       assert.throws(() => loadSecrets({ OPENCODE_PASSWORD: password, [name]: password, [`${name}_FILE`]: file }), /not both/);
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("Karakeep accepts direct keys and rejects invalid file secrets without exposing them", () => {
+  const dir = mkdtempSync(join(tmpdir(), "opencode-karakeep-secrets-"));
+  const password = "native-password-".repeat(4);
+  const key = "karakeep-test-only-key";
+  try {
+    assert.equal(loadSecrets({ OPENCODE_PASSWORD: password, KARAKEEP_API_KEY: key }).KARAKEEP_API_KEY, key);
+    const file = join(dir, "key");
+    const env = { OPENCODE_PASSWORD: password, KARAKEEP_API_KEY_FILE: file };
+    assert.throws(() => loadSecrets(env), /Cannot read KARAKEEP_API_KEY_FILE/);
+    assert.throws(() => loadSecrets({ ...env, KARAKEEP_API_KEY_FILE: dir }), /Cannot read KARAKEEP_API_KEY_FILE/);
+    writeFileSync(file, key + "\r\n", { mode: 0o600 });
+    assert.equal(loadSecrets(env).KARAKEEP_API_KEY, key);
+    for (const value of ["", `${key}\nextra`, `${key}\0`, "x".repeat(16385)]) {
+      writeFileSync(file, value);
+      assert.throws(() => loadSecrets(env), error =>
+        /KARAKEEP_API_KEY_FILE/.test(error.message) && !error.message.includes(key));
     }
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

@@ -62,7 +62,8 @@ is not a multi-tenant sandbox, and outbound host/LAN access is unrestricted.
 Secrets can come from environment variables or read-only files outside the
 workspace. Supported file variables are `OPENCODE_PASSWORD_FILE`,
 `GOOGLE_GENERATIVE_AI_API_KEY_FILE`, `GH_TOKEN_FILE`, `GITHUB_TOKEN_FILE`,
-`LUNCHMONEY_API_TOKEN_FILE`, and `GRAFANA_SERVICE_ACCOUNT_TOKEN_FILE`.
+`LUNCHMONEY_API_TOKEN_FILE`, `GRAFANA_SERVICE_ACCOUNT_TOKEN_FILE`, and
+`KARAKEEP_API_KEY_FILE`.
 Make files readable by UID 1000; set either the direct value or `_FILE`, not both.
 Recreate the container after changing credentials.
 
@@ -116,8 +117,19 @@ MCP credentials belong in the container environment; recreate it after changes:
   connection status alone does not establish credential validity.
 - **Context7:** library documentation via `https://mcp.context7.com/mcp`. If auth
   is needed, open `/mcps`, select Context7, and sign in; credentials persist in `/data`.
+- **Karakeep:** the official [MCP v0.33.1](https://docs.karakeep.app/integrations/mcp)
+  runs locally over stdio and connects to `KARAKEEP_API_ADDR` (Compose defaults to
+  `https://hoard.natwelch.com`). Create a dedicated API key in that instance's
+  **Settings → API Keys** and inject `KARAKEEP_API_KEY`, or mount a read-only secret
+  and set `KARAKEEP_API_KEY_FILE` to its container path. Set the address explicitly
+  when not using Compose. The MCP can search/read **and create, update, and delete**
+  bookmarks, lists, and tags; it is not read-only. After recreating the container,
+  check `/mcps` and run a small bookmark search to verify API authentication;
+  a connected MCP alone does not validate the key. The icco.me deployment loads
+  the key from `mist-opencode-karakeep-api-key` in Secret Manager; provision its
+  value before running the host updater. Never put the key in this configuration.
 
-All use V2 Code Mode. `orch-lead` can use all three; docs/research workers can use
+All use V2 Code Mode. `orch-lead` can use all four; docs/research workers can use
 Context7. Disable an integration with `disabled: true` under `mcp.servers` in your
 replacement config.
 

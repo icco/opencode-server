@@ -4,7 +4,7 @@ import { isIP } from "node:net";
 export function loadSecrets(input) {
   const env = { ...input };
   for (const name of ["OPENCODE_PASSWORD", "GOOGLE_GENERATIVE_AI_API_KEY", "GH_TOKEN", "GITHUB_TOKEN",
-    "LUNCHMONEY_API_TOKEN", "GRAFANA_SERVICE_ACCOUNT_TOKEN"]) {
+    "LUNCHMONEY_API_TOKEN", "GRAFANA_SERVICE_ACCOUNT_TOKEN", "KARAKEEP_API_KEY"]) {
     const file = env[`${name}_FILE`];
     if (!file) continue;
     if (env[name]) throw new Error(`Set either ${name} or ${name}_FILE, not both`);

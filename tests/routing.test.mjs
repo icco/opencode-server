@@ -63,7 +63,7 @@ test("MCP permissions survive materialization without changing worker permission
     return runtime.agents[agent].permissions.filter(p =>
       new RegExp(`^${p.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
   }
-  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "context7_query-docs"])
+  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "context7_query-docs"])
     assert.equal(permission("orch-lead", action), "allow");
   for (const agent of ["orch-docs", "orch-research"]) {
     assert.equal(permission(agent, "execute"), "allow");
@@ -72,6 +72,21 @@ test("MCP permissions survive materialization without changing worker permission
     assert.equal(permission(agent, "shell"), "deny");
   }
   assert.equal(permission("orch-repo", "grafana_list_datasources"), "deny");
+  for (const agent of ["orch-repo", "orch-docs", "orch-research"])
+    assert.equal(permission(agent, "karakeep_search-bookmarks"), "deny");
+});
+
+test("Karakeep uses a pinned official local MCP with environment-only credentials", async () => {
+  const expected = {
+    type: "local",
+    command: ["npx", "-y", "@karakeep/mcp@0.33.1"],
+    environment: {
+      KARAKEEP_API_ADDR: "{env:KARAKEEP_API_ADDR}",
+      KARAKEEP_API_KEY: "{env:KARAKEEP_API_KEY}",
+    },
+  };
+  assert.deepEqual(config.mcp.servers.karakeep, expected);
+  assert.deepEqual((await buildConfig()).mcp.servers.karakeep, expected);
 });
 
 test("materialization honors explicit agent overrides and real JSONC policies", async () => {
