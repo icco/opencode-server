@@ -48,7 +48,6 @@ try {
     await mkdir(directory, { recursive: true });
     await mkdir(join(home, "config/opencode"), { recursive: true });
     await writeFile(join(home, "runtime.json"), JSON.stringify(await buildConfig()));
-    await copyFile(join(root, "orchestra.jsonc"), join(home, "config/opencode/orchestra.jsonc"));
     await copyFile(join(root, "AGENTS.md"), join(home, "config/opencode/AGENTS.md"));
     // Keep the host's config, database overrides, and credentials out of this server.
     const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
@@ -75,33 +74,47 @@ try {
     const packages = data.filter(p => p.source.type === "package");
     assert.ok(packages.length >= 4, JSON.stringify(data));
     assert.ok(packages.every(p => p.state.status === "active"), JSON.stringify(packages));
-    assert.ok(packages.some(p => p.id === "opencode-orchestra"));
+    assert.ok(packages.some(p => p.id === "superpowers"));
+    assert.ok(!data.some(p => p.id === "opencode-orchestra"));
     assert.ok(packages.some(p => p.id === "@slkiser/opencode-quota.server"), JSON.stringify(packages));
     return true;
   });
   const commands = (await request("/api/command")).data;
-  for (const name of ["orchestra", "orchestra-status", "quota", "quota_status"])
+  for (const name of ["quota", "quota_status"])
     assert.ok(commands.some(c => c.name === name), `missing ${name}`);
   const google = (await request("/api/integration/google")).data;
   assert.ok(google.methods.some(m => m.type === "oauth" && m.id === "gemini-cli"));
   const copilot = (await request("/api/integration/github-copilot")).data;
   assert.ok(copilot.methods.some(m => m.type === "oauth"));
   const agents = (await request("/api/agent")).data;
-  const lead = agents.find(a => a.id === "orch-lead");
-  assert.ok(lead.system?.length, "Orchestra populated lead instructions");
-  assert.equal(lead.model.id, "gpt-6-astra");
-  assert.equal(agents.find(a => a.id === "orch-docs").model.id, "gemini-3.8-flash");
+  const lead = agents.find(a => a.id === "build");
+  assert.ok(lead, "native build agent is available");
+  assert.ok(!agents.some(a => a.id.startsWith("orch-")));
   function permission(agent, action) {
     return agent.permissions.filter(rule => new RegExp(`^${rule.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
   }
   for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "context7_query-docs"])
     assert.equal(permission(lead, action), "allow", `lead can use ${action}`);
-  const docs = agents.find(a => a.id === "orch-docs");
-  assert.equal(permission(docs, "execute"), "allow");
-  assert.equal(permission(docs, "context7_query-docs"), "allow");
-  assert.equal(permission(docs, "edit"), "deny");
-  assert.equal(permission(docs, "karakeep_search-bookmarks"), "deny");
-  assert.ok(!lead.system.includes("Superpowers workflow"));
+  const general = agents.find(a => a.id === "general");
+  const explore = agents.find(a => a.id === "explore");
+  for (const agent of [general, explore]) {
+    assert.ok(agent);
+    for (const action of ["grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "subagent"])
+      assert.equal(permission(agent, action), "deny", `${agent.id} cannot use ${action}`);
+    for (const action of ["read", "glob", "grep", "webfetch", "websearch", "skill", "execute", "context7_query-docs"])
+      assert.equal(permission(agent, action), "allow", `${agent.id} can use ${action}`);
+  }
+  for (const action of ["edit", "shell"])
+    assert.equal(permission(explore, action), "deny", `explore cannot use ${action}`);
+  for (const action of ["edit", "shell"])
+    assert.equal(permission(general, action), "allow", `general can implement and test with ${action}`);
+  const skills = (await request("/api/skill")).data;
+  for (const id of ["using-superpowers", "brainstorming", "test-driven-development", "using-git-worktrees", "verification-before-completion"])
+    assert.ok(skills.some(skill => skill.id === id), `missing Superpowers skill ${id}`);
+  const entries = await request("/api/config");
+  const runtime = entries.findLast(entry => entry.info?.worktree)?.info;
+  assert.equal(runtime.default_agent, "build");
+  assert.equal(runtime.worktree.directory, "/data/workspace/.worktrees");
   await until(async () => {
     const { data } = await request("/api/mcp");
     for (const name of external ? ["lunchmoney", "grafana", "karakeep"] : ["lunchmoney", "karakeep"]) {
@@ -121,7 +134,7 @@ try {
   await request(`/api/experimental/session/${session.id}/wait`, undefined, "POST");
   const context = (await request(`/api/session/${session.id}/message`)).data;
   assert.ok(!context.some(m => m.type === "assistant"), "no model inference");
-  console.log("V2 host, authentication, Orchestra agents, and deterministic quota commands passed.");
+  console.log("V2 host, authentication, Superpowers skills, worktree settings, and deterministic quota commands passed.");
 } finally {
   if (session) await request(`/api/session/${session.id}`, undefined, "DELETE").catch(() => {});
   if (child?.pid && child.exitCode == null && child.signalCode == null) {
@@ -131,6 +144,11 @@ try {
       child.kill("SIGTERM");
     });
   }
-  if (home) await rm(home, { recursive: true, force: true });
+  if (home) {
+    const serverLog = await readFile(join(home, "data/opencode/log/opencode.log"), "utf8").catch(() => "");
+    const diagnostics = serverLog.split("\n").filter(line => /level=ERROR|level=WARN|install|superpowers/.test(line));
+    if (diagnostics.length) console.log(diagnostics.join("\n").replaceAll(password, "[redacted]"));
+    await rm(home, { recursive: true, force: true });
+  }
   if (logs) console.log(logs.replaceAll(password, "[redacted]"));
 }

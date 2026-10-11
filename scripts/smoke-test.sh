@@ -77,7 +77,7 @@ for path in /api/info /api/integration; do
 done
 
 docker exec "$name" sh -ec '
-  cmp /etc/opencode/orchestra.jsonc "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
+  test -d "$HOME/workspace/.worktrees"
   cmp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
   opencode api get /api/info --server http://127.0.0.1:4096
 '
@@ -93,8 +93,4 @@ docker exec "$name" sh -ec '
   cp "$XDG_CONFIG_HOME/opencode/AGENTS.md" "$HOME/expected-agents.md"
   /usr/local/bin/entrypoint.sh true
   cmp "$HOME/expected-agents.md" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
-  printf "\n// Persistent policy edit\n" >> "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
-  cp "$XDG_CONFIG_HOME/opencode/orchestra.jsonc" "$HOME/expected-orchestra.jsonc"
-  /usr/local/bin/entrypoint.sh true
-  cmp "$HOME/expected-orchestra.jsonc" "$XDG_CONFIG_HOME/opencode/orchestra.jsonc"
 '
