@@ -36,7 +36,7 @@ RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; e
 
 FROM tools AS config
 WORKDIR /build
-COPY package.json pnpm-lock.yaml opencode.jsonc orchestra.jsonc ./
+COPY package.json pnpm-lock.yaml opencode.jsonc ./
 COPY scripts/build-config.mjs ./scripts/build-config.mjs
 RUN pnpm install --frozen-lockfile --ignore-scripts --no-optional \
     && node scripts/build-config.mjs /build/runtime.json
@@ -56,7 +56,6 @@ ENV HOME=/data \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
-COPY orchestra.jsonc /etc/opencode/orchestra.jsonc
 COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \

@@ -87,8 +87,8 @@ api_key = <your key from https://wakatime.com/api-key>
   operations. Verify with a small bookmark search; connection status alone does
   not validate the key.
 
-All four integrations use V2 Code Mode. The default `orch-lead` agent can use them;
-docs/research workers can use Context7. Without a Lunch Money token its server
+All four integrations use V2 Code Mode. The default **Build** agent can use them.
+Without a Lunch Money token its server
 cannot start. Check connections with:
 
 ```sh
@@ -100,28 +100,45 @@ listing datasources and running a small query, not just checking MCP connection
 status. To turn an integration off, set `disabled: true` on its entry under
 `mcp.servers` in your replacement config.
 
-## Specialist routing and quota
+## Superpowers, worktrees, and quota
 
-[`Orchestra`](https://github.com/Oeronteros/opencode-orchestra) runs quality-first
-specialist workflows. Use `/orchestra <task>` or the default **orch-lead** agent;
-choose **Build** or **Plan** for the normal single-agent workflow.
+[`Superpowers`](https://github.com/obra/superpowers) v7.0.0 replaces Orchestra,
+pinned to its full Git commit for reproducible installs. The default **Build**
+agent uses native skills for planning, debugging, TDD, review, and verification.
+Superpowers registers its skills and injects its bootstrap into top-level sessions;
+native subagents can load skills without restarting the controller workflow.
 
-[`orchestra.jsonc`](orchestra.jsonc) assigns GPT-6 Astra to the lead/tests/merge,
-Sonnet 5 to repository exploration, Gemini to docs/research, and Opus 5.5 to
-review/security/judging. Subagents have ordered fallback chains; the lead uses
-OpenCode's native request path. Two workers run concurrently, with eight total.
+Repository edits must run in Git worktrees under the shared workspace root:
+`/data/workspace/.worktrees/<repository>/<task>`. Create the task branch before
+editing and move the session there. OpenCode's native worktree API also uses
+`/data/workspace/.worktrees` as its parent (and appends its requested/generated name).
+The directory setting chooses placement; the global `AGENTS.md` supplies the
+always-use-worktrees rule. It does not sandbox arbitrary shell commands.
 
 [`OpenCode Quota`](https://github.com/slkiser/opencode-quota) provides `/quota` and
 `/quota_status`; remaining balances do not influence routing. It replaces the
 deprecated Cardinal fork; existing quota configuration remains compatible. Gemini Code Assist
 quota requires [organization setup](https://github.com/slkiser/opencode-quota/blob/main/docs/readme/providers.md#gemini-cli).
 
-The server seeds `/data/.config/opencode/orchestra.jsonc` once and preserves it.
-Project `.opencode/orchestra.jsonc` overrides it. Restart after edits. The policy
-controls Orchestra dispatch and fallbacks. Agent prompts and native default model
-assignments are materialized during the image build, so changing those requires
-regenerating the config or setting `agents.<name>.model` in a project config.
-Superpowers compatibility is disabled because this image does not install its skills.
+Old persistent `orchestra.jsonc` files are left untouched for rollback, but the
+new image does not load Orchestra or generate its agents. Existing sessions that
+selected `orch-lead` should switch to **Build** after deploying the image.
+
+### Additional plugin proposals
+
+Research checked on 2026-10-11; these are **not installed**:
+
+| Candidate | Recommendation | V2 and deployment considerations |
+| --- | --- | --- |
+| [opencode-dcp](https://github.com/arafays/opencode-dcp) | Best next trial for long Copilot sessions: model-directed compression and pruning. | Explicit V2 implementation. Pin a compatible version and test alongside Superpowers/native compaction; summaries can drop important context and alter prompt-cache behavior. |
+| [opencode-notifier](https://github.com/mohak34/opencode-notifier) | Useful for unattended tasks if you want a server-side webhook/notification command. | Explicit dual V1/V2 support. Web clients do not receive its desktop sounds/popups; remote alerts need an explicitly configured server command. Native terminal notifications may already suffice. |
+| [opencode-security-guard](https://www.npmjs.com/package/opencode-security-guard) | Optional shell-approval layer, not a default addition. | Supports V2 `>=2.0.14 <3`, but sends eligible command text to OpenRouter/Jev and needs a credential. Requires a privacy/cost decision; classifications are not a sandbox. |
+
+Keep Quota, WakaTime, and the current MCP integrations. Avoid adding another
+orchestrator such as Oh My OpenCode alongside Superpowers. The popular
+[`@tarquinen/opencode-dcp`](https://github.com/Opencode-DCP/opencode-dynamic-context-pruning)
+is distinct from the V2-native `opencode-dcp` above; do not infer V2 compatibility
+from its own package major version.
 
 ## Public hosting
 
@@ -148,12 +165,17 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
 - Includes Go, TypeScript, pnpm, and common shell tools; see [`Dockerfile`](Dockerfile) for versions.
   Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
 - Defaults live in [`opencode.jsonc`](opencode.jsonc), loaded at
-  `/etc/opencode/opencode.json` after agent materialization. To replace this file,
+  `/etc/opencode/opencode.json` after JSONC conversion. To replace this file,
   edit the source config, run `node scripts/build-config.mjs runtime.json`, and
-  mount `runtime.json` there read-only. The raw source omits generated Orchestra
-  definitions. Project `opencode.json(c)` files can override settings normally.
+  mount `runtime.json` there read-only. Project `opencode.json(c)` files can override settings normally.
 - [`AGENTS.md`](AGENTS.md) is seeded to `/data/.config/opencode/AGENTS.md` on first
-  startup and preserved thereafter. Edit that persistent file for global instructions.
+  startup and preserved thereafter. It includes worktree, Superpowers, Git, language,
+  and PR policies. Existing volumes must merge missing rules into that persistent
+  file; rebuilding does not overwrite user instructions. OpenCode V2 loads the
+  global file before project instructions and detects ambient edits before the next
+  model request. These are model instructions, not hard permission enforcement.
+  This change was confirmed by the running session receiving the global instruction
+  update. Plugin/runtime activation remains pending image deployment by request.
   V2 ignores the old `instructions` array and does not run language servers;
   use each project's lint, typecheck, and compiler commands.
 - Restart OpenCode after config changes. After environment/password changes, run
@@ -172,6 +194,7 @@ gh attestation verify oci://ghcr.io/icco/opencode-server:main --owner icco
 
 The integration check needs the OpenCode version pinned in `Dockerfile`; it uses
 isolated data on port 4197 (`ROUTER_TEST_PORT` overrides) and requests no inference.
-It checks every plugin, agent/MCP permissions, Lunch Money/Karakeep stdio handshakes, and
+It checks every plugin, Superpowers skill registration, Build/MCP permissions,
+worktree settings, Lunch Money/Karakeep stdio handshakes, and
 quota commands. Image smoke tests also check Grafana and need Node.js 26, Docker,
 Bash, curl, jq, OpenSSL, and `timeout`. CI runs them on amd64 and arm64.

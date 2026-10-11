@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { Config } from "@opencode/schema/config";
 import { buildConfig, readConfig } from "../scripts/build-config.mjs";
@@ -11,107 +10,52 @@ import { buildConfig, readConfig } from "../scripts/build-config.mjs";
 // Decode schemas with their own Effect runtime, not an independently updated one.
 const schemaRequire = createRequire(import.meta.resolve("@opencode/schema/config"));
 const { Schema } = await import(schemaRequire.resolve("effect"));
-
 const config = await readConfig();
-const upstream = new URL("./", import.meta.resolve("@oeronteros-1/opencode-orchestra"));
-const { orchestraConfigSchema } = await import(new URL("config/schema.js", upstream));
-const { loadConfig } = await import(new URL("config/load.js", upstream));
-const { createAgentSet } = await import(new URL("agents/build.js", upstream));
-const { loadPrompts } = await import(new URL("prompts/load.js", upstream));
-const { config: policy } = await loadConfig(process.cwd(), {
-  configFile: fileURLToPath(new URL("../orchestra.jsonc", import.meta.url)),
-});
 
 test("configuration validates strictly against the installed V2 schema", () => {
   const parsed = Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(config);
-  assert.equal(parsed.default_agent, "orch-lead");
+  assert.equal(parsed.default_agent, "build");
   assert.equal(parsed.model.providerID, "github-copilot");
+  assert.equal(config.worktree.directory, "/data/workspace/.worktrees");
 });
 
-test("Orchestra policy validates and all upstream agents are materialized", async () => {
-  const parsed = orchestraConfigSchema.parse(policy);
-  const agents = createAgentSet(parsed, await loadPrompts());
-  const runtime = await buildConfig();
-  for (const [name, agent] of Object.entries(agents)) {
-    assert.equal(runtime.agents[name].mode, agent.mode);
-    assert.equal(runtime.agents[name].hidden, agent.hidden);
-  }
-  assert.equal(agents["orch-lead"].model, "github-copilot/gpt-6-astra");
-  assert.equal(agents["orch-docs"].model, "google/gemini-3.8-flash");
-  assert.equal(agents["orch-judge"].model, "github-copilot/claude-opus-5.5");
-  assert.equal(agents["orch-repo"].permission.edit ?? agents["orch-repo"].permission["*"], "deny");
+test("Superpowers is immutable-pinned and replaces Orchestra", async () => {
+  assert.ok(config.plugins.some(p => /^superpowers@git\+https:\/\/github.com\/obra\/superpowers.git#[a-f0-9]{40}$/.test(p)));
+  assert.ok(!config.plugins.some(p => p.includes("orchestra")));
+  assert.ok(!Object.keys(config.agents).some(p => p.startsWith("orch-")));
+  assert.deepEqual(await buildConfig(), config);
+  const instructions = await readFile(new URL("../AGENTS.md", import.meta.url), "utf8");
+  assert.match(instructions, /Always perform repository code and configuration changes in a Git worktree/);
+  assert.match(instructions, /\/data\/workspace\/\.worktrees\/<repository>\/<task>/);
+  assert.match(instructions, /Use Superpowers skills/);
 });
 
-test("configured fallback chains refer to materialized agents and allowed providers", async () => {
-  const runtime = await buildConfig();
-  const allowed = new Set(config.experimental.policies.filter(p => p.effect === "allow").map(p => p.resource));
-  for (const [agent, models] of Object.entries(policy.models.fallback.agents)) {
-    assert.ok(runtime.agents[agent]);
-    assert.ok(models.length > 0);
-    for (const model of models) assert.ok(allowed.has(model.split("/")[0]));
-  }
+test("existing providers, MCP integrations and quota are preserved", () => {
+  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "grafana", "karakeep", "lunchmoney"]);
+  assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.2"));
+  assert.deepEqual(config.permissions, [{ action: "*", resource: "*", effect: "allow" }]);
 });
 
-test("generated V2 agents preserve upstream instructions and read-only worker permissions", async () => {
-  const runtime = await buildConfig();
-  Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(runtime);
-  assert.ok(runtime.agents["orch-lead"].system.length > 100);
-  const worker = runtime.agents["orch-repo"];
-  assert.equal(worker.permissions.find(p => p.action === "*").effect, "deny");
-  assert.equal(worker.model, policy.models.agents["orch-repo"]);
-});
-
-test("MCP permissions survive materialization without changing worker permissions", async () => {
-  const runtime = await buildConfig();
-  function permission(agent, action) {
-    return runtime.agents[agent].permissions.filter(p =>
-      new RegExp(`^${p.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
-  }
-  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "context7_query-docs"])
-    assert.equal(permission("orch-lead", action), "allow");
-  for (const agent of ["orch-docs", "orch-research"]) {
-    assert.equal(permission(agent, "execute"), "allow");
-    assert.equal(permission(agent, "context7_query-docs"), "allow");
-    assert.equal(permission(agent, "edit"), "deny");
-    assert.equal(permission(agent, "shell"), "deny");
-  }
-  assert.equal(permission("orch-repo", "grafana_list_datasources"), "deny");
-  for (const agent of ["orch-repo", "orch-docs", "orch-research"])
-    assert.equal(permission(agent, "karakeep_search-bookmarks"), "deny");
-});
-
-test("materialization honors explicit agent overrides and real JSONC policies", async () => {
+test("runtime conversion preserves JSONC overrides and rejects malformed input", async () => {
   const home = await mkdtemp(join(tmpdir(), "opencode-config-test-"));
   try {
     const configPath = join(home, "opencode.jsonc");
-    const policyPath = join(home, "orchestra.jsonc");
-    const permissions = [{ action: "execute", resource: "*", effect: "deny" }];
-    await writeFile(configPath, "// Agent overrides\n" + JSON.stringify({ agents: {
-      "orch-docs": { model: "google/gemini-3.1-pro-preview", system: "Custom docs guidance", permissions },
-    } }).replace(/}$/, ",}"));
-    await writeFile(policyPath, '{ // Keep comments and trailing commas valid.\n"superpowers": {"compatibility": false,}, "orchestration": {"exposeWorkers": true,},}');
-    const runtime = await buildConfig({ configPath, policyPath });
-    Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(runtime);
-    assert.equal(runtime.agents["orch-docs"].model, "google/gemini-3.1-pro-preview");
-    assert.equal(runtime.agents["orch-docs"].system, "Custom docs guidance");
-    assert.deepEqual(runtime.agents["orch-docs"].permissions.at(-1), permissions[0]);
-    assert.equal(runtime.agents["orch-docs"].hidden, false);
-    assert.ok(!runtime.agents["orch-lead"].system.includes("Superpowers workflow"));
+    const custom = { agents: { build: { system: "Custom guidance", model: "google/gemini-3.8-flash" } } };
+    await writeFile(configPath, "// Preserve overrides\n" + JSON.stringify(custom).replace(/}$/, ",}"));
+    assert.deepEqual(await buildConfig({ configPath }), custom);
     await writeFile(configPath, '{"model": }');
-    await assert.rejects(buildConfig({ configPath, policyPath }), /Invalid config/);
+    await assert.rejects(buildConfig({ configPath }), /Invalid config/);
   } finally {
     await rm(home, { recursive: true, force: true });
   }
 });
 
-test("build tooling, schema and runtime plugin versions stay aligned", async () => {
+test("build tooling and schema versions stay aligned", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url)));
   const dockerfile = await readFile(new URL("../Dockerfile", import.meta.url), "utf8");
   const version = dockerfile.match(/^ARG OPENCODE_VERSION=(.+)$/m)[1];
   for (const name of ["@opencode/plugin", "@opencode/schema"])
     assert.equal(pkg.devDependencies[name], version, `${name} must match the server`);
-  const orchestra = pkg.devDependencies["@oeronteros-1/opencode-orchestra"];
-  assert.ok(config.plugins.includes(`@oeronteros-1/opencode-orchestra@${orchestra}`));
-  assert.ok(policy.$schema.includes(`@${orchestra}/`));
+  assert.ok(!pkg.devDependencies["@oeronteros-1/opencode-orchestra"]);
   assert.equal(dockerfile.match(/^ARG PNPM_VERSION=(.+)$/m)[1], pkg.packageManager.split("@")[1]);
 });
