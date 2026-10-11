@@ -32,7 +32,7 @@ test("Superpowers is immutable-pinned and replaces Orchestra", async () => {
 
 test("image-owned skills are discoverable", async () => {
   assert.deepEqual(config.skills, ["/etc/opencode/skills"]);
-  for (const name of ["commit-push-pr", "icco-go-repo"]) {
+  for (const name of ["commit-push-pr", "go-repo"]) {
     const skill = await readFile(new URL(`../skills/${name}/SKILL.md`, import.meta.url), "utf8");
     assert.match(skill, new RegExp(`^---\nname: ${name}\ndescription: .+\n---\n`));
   }

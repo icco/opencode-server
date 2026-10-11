@@ -48,7 +48,7 @@
 - The user pushes commits to open PR branches. Fetch before pushing. If a push is rejected, pull (a merge commit is fine) and push again.
 - Use one branch per task, even across phases. Branch independent PRs off `main` instead of stacking them.
 - Pass `--repo owner/name` to `gh pr` commands instead of relying on the working directory.
-- Never run `gh pr merge --auto` on `icco` repositories. They have no branch protection, so it merges immediately without waiting for CI.
+- Never run `gh pr merge --auto`. Without branch protection it merges immediately instead of waiting for CI.
 - After a squash merge, confirm late commits landed with `git merge-base --is-ancestor <sha> origin/main`, and re-land anything missing in a small follow-up PR.
 - Commits under the user's account are often an earlier agent's work. Do not cite authorship metadata as evidence of who designed something.
 
@@ -68,7 +68,7 @@
 - Use `Taskfile.yml` (go-task v3) for build automation in personal projects, not Makefiles.
 - Edit YAML with `yq` and format it with `yq -iP .`, since plain `-i` corrupts folded block scalars. Put YAML comments on their own line.
 - Pipe JSON with `printf '%s' "$json"`, never `echo`, which expands `\n` in zsh.
-- In `icco` Go repositories use `go.icco.me/gutil` for logging, JSON responses, and ETags, chi for routing, and GORM with `AutoMigrate` for Postgres. Load the `icco-go-repo` skill for repository plumbing.
+- In Go repositories that depend on `gutil`, use it for logging, JSON responses, and ETags. Use chi for routing and GORM with `AutoMigrate` for Postgres. Load the `go-repo` skill for repository plumbing.
 - `golangci-lint` caps output at 50 issues per linter. Pass `--max-issues-per-linter=0 --max-same-issues=0` for true counts.
 - Measure Go coverage with the toolchain from `go.mod` (`GOTOOLCHAIN=go1.x.y`), since totals differ between Go versions.
 - Regenerate lock files with their tool (`tofu init -upgrade`, `pnpm install`). Never hand-edit them.
@@ -93,14 +93,12 @@
 ## Pull request descriptions
 
 - Before creating or editing a PR, read and follow its repository's PR template. Check the repository owner's `.github` repository for an inherited template when there is no repository-local template. Never assume no local file means no template exists.
-- For `icco` repositories, the inherited template is `https://github.com/icco/.github/blob/main/pull_request_template.md`. Fetch the current template rather than relying only on this remembered copy.
-- The current template uses exactly `# Why` and `# Risks`. Keep both sections concise. Do not replace them with Summary, Validation, Test Plan, Deployment, or other assistant-generated sections. Put essential rollout caveats under Risks; leave detailed setup instructions in repository documentation.
+- Use exactly the template's sections and keep each concise. Do not add Summary, Validation, Test Plan, Deployment, or other assistant-generated sections. Put essential rollout caveats under the risks section and leave detailed setup instructions in repository documentation.
 - Keep bodies to six lines of content or fewer, excluding template headers. Write for the reviewer: no narrative of the work, no bugs found along the way, no test-plan checklist.
 - Never add AI attribution to a PR body. `Co-Authored-By` trailers in commits are fine.
 - Use Conventional Commit PR titles with lowercase subjects. PRs are squash-merged.
 - Pick the type honestly: `fix` for repairs, `chore`, `docs`, `ci`, or `build` for plumbing, and `feat` only for a new user-facing capability. Avoid `refactor`. The title drives semantic-version bumps.
 
-## Personal infrastructure
+## Personal sites
 
-- Merged changes reach the `mist` host through its hourly cron at :24. Do not deploy by hand. Wait, then check the container's start time and logs.
 - `*.natwelch.com` sites follow resume.natwelch.com: Avenir Next, 16px/1.5 body, 32px weight-400 h1, `#265c83` links, one column about 800px wide.

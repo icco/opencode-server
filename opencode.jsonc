@@ -51,15 +51,8 @@
   "mcp": {
     "servers": {
       "notion": {
-        "type": "local",
-        "command": [
-          "npx",
-          "-y",
-          "@notionhq/notion-mcp-server@2.5.2"
-        ],
-        "environment": {
-          "NOTION_TOKEN": "{env:NOTION_TOKEN}"
-        }
+        "type": "remote",
+        "url": "https://mcp.notion.com/mcp"
       },
       "karakeep": {
         "type": "local",

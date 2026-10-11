@@ -1,11 +1,11 @@
 ---
-name: icco-go-repo
-description: Conventions for creating or maintaining Go repositories under github.com/icco, covering scaffolding, lint configuration, CI workflows, versioning, and goreleaser releases. Use when creating a Go repository or changing its lint, CI, or release plumbing.
+name: go-repo
+description: Conventions for creating or maintaining the user's Go repositories, covering scaffolding, lint configuration, CI workflows, versioning, and goreleaser releases. Use when creating a Go repository or changing its lint, CI, or release plumbing.
 ---
 
-- Create repositories from the `icco/go-template` GitHub template. Do not copy `icco/reportd`, which is stale.
-- Actions are disabled on the template itself. Confirm a new repository has them enabled with `gh api repos/icco/<repo>/actions/permissions`.
-- Module paths are `go.icco.me/<repo>`. Libraries start at `v1.0.0`.
+- Create repositories from the owner's `go-template` GitHub template rather than copying an older repository.
+- Actions are disabled on the template itself. Confirm a new repository has them enabled with `gh api repos/<owner>/<repo>/actions/permissions`.
+- Use the module path the owner's other repositories use. Libraries start at `v1.0.0`.
 - Keep lint configuration in a committed `.golangci.yml`, never as `-E` flags in a workflow, so local runs and CI enforce the same set.
 - If golangci-lint refuses to load because it was built with an older Go than `go.mod`, rebuild it with the current toolchain at CI's version (`go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@<version>`). Never skip lint because of it.
 - `.yamllint` disables `document-start` and `line-length` and sets `truthy: check-keys: false`.

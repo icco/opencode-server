@@ -4,7 +4,7 @@ description: Commit, push, and open or update a pull request following the user'
 ---
 
 1. Run `git status -sb`, `git diff HEAD`, and `git branch --show-current`. On `main`, create a branch first.
-2. Read the PR template from `.github/pull_request_template.md`, or from the owner's `.github` repository when there is none (for `icco`, `gh api repos/icco/.github/contents/pull_request_template.md --jq .content | base64 -d`).
+2. Read the PR template from `.github/pull_request_template.md`, or from the owner's `.github` repository when there is none (`gh api repos/<owner>/.github/contents/pull_request_template.md --jq .content | base64 -d`).
 3. Stage explicit paths, never `git add -A`. Commit with a Conventional Commits message, lowercase after the prefix.
 4. Gate the push on the branch name, push, and confirm `git rev-parse HEAD origin/<branch>` match.
 5. Run `gh pr view --repo owner/name`. If a PR exists, leave its title and body alone and comment instead.
