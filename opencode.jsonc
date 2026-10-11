@@ -20,6 +20,7 @@
         { "action": "grafana_*", "resource": "*", "effect": "deny" },
         { "action": "lunchmoney_*", "resource": "*", "effect": "deny" },
         { "action": "karakeep_*", "resource": "*", "effect": "deny" },
+        { "action": "notion_*", "resource": "*", "effect": "deny" },
         { "action": "subagent", "resource": "*", "effect": "deny" },
         { "action": "skill", "resource": "*", "effect": "allow" },
         { "action": "execute", "resource": "*", "effect": "allow" },
@@ -33,6 +34,7 @@
         { "action": "grafana_*", "resource": "*", "effect": "deny" },
         { "action": "lunchmoney_*", "resource": "*", "effect": "deny" },
         { "action": "karakeep_*", "resource": "*", "effect": "deny" },
+        { "action": "notion_*", "resource": "*", "effect": "deny" },
         { "action": "subagent", "resource": "*", "effect": "deny" },
         { "action": "skill", "resource": "*", "effect": "allow" },
         { "action": "execute", "resource": "*", "effect": "allow" },
@@ -48,6 +50,10 @@
   },
   "mcp": {
     "servers": {
+      "notion": {
+        "type": "remote",
+        "url": "https://mcp.notion.com/mcp"
+      },
       "karakeep": {
         "type": "local",
         "command": [
@@ -92,6 +98,9 @@
       }
     }
   },
+  "skills": [
+    "/etc/opencode/skills"
+  ],
   "plugins": [
     "opencode-gemini-auth@2.0.1",
     "opencode-wakatime@1.4.0",

@@ -47,7 +47,7 @@ try {
     const { buildConfig } = await import("./build-config.mjs");
     await mkdir(directory, { recursive: true });
     await mkdir(join(home, "config/opencode"), { recursive: true });
-    await writeFile(join(home, "runtime.json"), JSON.stringify(await buildConfig()));
+    await writeFile(join(home, "runtime.json"), JSON.stringify({ ...await buildConfig(), skills: [join(root, "skills")] }));
     await copyFile(join(root, "AGENTS.md"), join(home, "config/opencode/AGENTS.md"));
     // Keep the host's config, database overrides, and credentials out of this server.
     const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
@@ -93,13 +93,13 @@ try {
   function permission(agent, action) {
     return agent.permissions.filter(rule => new RegExp(`^${rule.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
   }
-  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "context7_query-docs"])
+  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_notion-search", "context7_query-docs"])
     assert.equal(permission(lead, action), "allow", `lead can use ${action}`);
   const general = agents.find(a => a.id === "general");
   const explore = agents.find(a => a.id === "explore");
   for (const agent of [general, explore]) {
     assert.ok(agent);
-    for (const action of ["grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "subagent"])
+    for (const action of ["grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_notion-search", "subagent"])
       assert.equal(permission(agent, action), "deny", `${agent.id} cannot use ${action}`);
     for (const action of ["read", "glob", "grep", "webfetch", "websearch", "skill", "execute", "context7_query-docs"])
       assert.equal(permission(agent, action), "allow", `${agent.id} can use ${action}`);
@@ -111,6 +111,8 @@ try {
   const skills = (await request("/api/skill")).data;
   for (const id of ["using-superpowers", "brainstorming", "test-driven-development", "using-git-worktrees", "verification-before-completion"])
     assert.ok(skills.some(skill => skill.id === id), `missing Superpowers skill ${id}`);
+  for (const id of ["commit-push-pr", "go-repo"])
+    assert.ok(skills.some(skill => skill.id === id), `missing image skill ${id}`);
   const entries = await request("/api/config");
   const runtime = entries.findLast(entry => entry.info?.worktree)?.info;
   assert.equal(runtime.default_agent, "build");
@@ -120,7 +122,8 @@ try {
     for (const name of external ? ["lunchmoney", "grafana", "karakeep"] : ["lunchmoney", "karakeep"]) {
       assert.equal(data.find(server => server.name === name)?.status.status, "connected", JSON.stringify(data));
     }
-    assert.ok(data.some(server => server.name === "context7"));
+    for (const name of ["context7", "notion"])
+      assert.ok(data.some(server => server.name === name), `missing ${name}`);
     return true;
   });
   session = (await request("/api/session", { title: "V2 integration test", agent: "build",

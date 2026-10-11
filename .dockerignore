@@ -3,6 +3,7 @@
 !entrypoint.sh
 !healthcheck.sh
 !AGENTS.md
+!skills/
 !opencode.jsonc
 !orchestra.jsonc
 !package.json

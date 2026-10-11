@@ -86,10 +86,9 @@ api_key = <your key from https://wakatime.com/api-key>
   recreate the container. It supports search/read and **create, update, and delete**
   operations. Verify with a small bookmark search; connection status alone does
   not validate the key.
+- **Notion:** Notion's hosted [MCP](https://developers.notion.com/guides/mcp/overview) at `https://mcp.notion.com/mcp`. Open `/mcps`, select Notion, and sign in once. OAuth credentials persist in `/data`.
 
-All four integrations use V2 Code Mode. The default **Build** agent can use them.
-Without a Lunch Money token its server
-cannot start. Check connections with:
+All five integrations use V2 Code Mode. The default **Build** agent can use them. Without a Lunch Money token its server cannot start. Check connections with:
 
 ```sh
 docker compose exec opencode opencode api get /api/mcp --server http://127.0.0.1:4096
@@ -108,11 +107,9 @@ agent uses native skills for planning, debugging, TDD, review, and verification.
 Superpowers registers its skills and injects its bootstrap into top-level sessions;
 native subagents can load skills without restarting the controller workflow.
 
-Only Build receives the blanket tool allow. General can implement and test, while
-Explore remains read-only; both native subagents are denied Grafana, Lunch Money,
-Karakeep, and further delegation. They may use Context7 through Code Mode, whose
-nested calls enforce each tool's permissions. These are tool boundaries, not OS
-isolation: General's shell still runs with the server user's authority.
+Skills in [`skills/`](skills) ship in the image at `/etc/opencode/skills` and update with it: `commit-push-pr` for the commit and PR workflow, and `go-repo` for Go repository scaffolding, lint, and release plumbing.
+
+Only Build receives the blanket tool allow. General can implement and test, while Explore remains read-only; both native subagents are denied Grafana, Lunch Money, Karakeep, Notion, and further delegation. They may use Context7 through Code Mode, whose nested calls enforce each tool's permissions. These are tool boundaries, not OS isolation: General's shell still runs with the server user's authority.
 
 Repository edits must run in Git worktrees under the shared workspace root:
 `/data/workspace/.worktrees/<repository>/<task>`. Create the task branch before
@@ -168,22 +165,12 @@ outbound host/LAN access is unrestricted. This is not a multi-tenant sandbox.
 
 ## Configuration and development
 
-- Includes Go, TypeScript, pnpm, and common shell tools; see [`Dockerfile`](Dockerfile) for versions.
-  Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
+- Includes Go, TypeScript, pnpm, go-task, golangci-lint, and common shell tools; see [`Dockerfile`](Dockerfile) for versions. Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
 - Defaults live in [`opencode.jsonc`](opencode.jsonc), loaded at
   `/etc/opencode/opencode.json` after JSONC conversion. To replace this file,
   edit the source config, run `node scripts/build-config.mjs runtime.json`, and
   mount `runtime.json` there read-only. Project `opencode.json(c)` files can override settings normally.
-- [`AGENTS.md`](AGENTS.md) is seeded to `/data/.config/opencode/AGENTS.md` on first
-  startup and preserved thereafter. It includes worktree, Superpowers, Git, language,
-  and PR policies. Existing volumes must merge missing rules into that persistent
-  file; rebuilding does not overwrite user instructions. OpenCode V2 loads the
-  global file before project instructions and detects ambient edits before the next
-  model request. These are model instructions, not hard permission enforcement.
-  This change was confirmed by the running session receiving the global instruction
-  update. Plugin/runtime activation remains pending image deployment by request.
-  V2 ignores the old `instructions` array and does not run language servers;
-  use each project's lint, typecheck, and compiler commands.
+- [`AGENTS.md`](AGENTS.md) is the global instruction file. Each startup copies it to `/data/.config/opencode/AGENTS.md` and overwrites local edits, so change it here instead. OpenCode V2 loads the global file before project instructions and detects ambient edits before the next model request. These are model instructions, not hard permission enforcement. V2 ignores the old `instructions` array and does not run language servers; use each project's lint, typecheck, and compiler commands.
 - Restart OpenCode after config changes. After environment/password changes, run
   `docker compose up -d --force-recreate opencode`.
 - Versions are pinned in `Dockerfile` and `opencode.jsonc`. CI tests both
@@ -198,9 +185,4 @@ bash scripts/smoke-test.sh opencode-server
 gh attestation verify oci://ghcr.io/icco/opencode-server:main --owner icco
 ```
 
-The integration check needs the OpenCode version pinned in `Dockerfile`; it uses
-isolated data on port 4197 (`ROUTER_TEST_PORT` overrides) and requests no inference.
-It checks every plugin, Superpowers skill registration, Build/MCP permissions,
-worktree settings, Lunch Money/Karakeep stdio handshakes, and
-quota commands. Image smoke tests also check Grafana and need Node.js 26, Docker,
-Bash, curl, jq, OpenSSL, and `timeout`. CI runs them on amd64 and arm64.
+The integration check needs the OpenCode version pinned in `Dockerfile`; it uses isolated data on port 4197 (`ROUTER_TEST_PORT` overrides) and requests no inference. It checks every plugin, Superpowers and image skill registration, Build/MCP permissions, worktree settings, Lunch Money/Karakeep stdio handshakes, and quota commands. Image smoke tests also check Grafana and need Node.js 26, Docker, Bash, curl, jq, OpenSSL, and `timeout`. CI runs them on amd64 and arm64.

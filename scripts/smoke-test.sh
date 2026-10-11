@@ -9,12 +9,15 @@ expected_pnpm=$(node -p 'require("./package.json").packageManager.split("@")[1]'
 # Check script dependencies as the non-root runtime user, without starting the server.
 docker run --rm -e "EXPECTED_PNPM=$expected_pnpm" --entrypoint sh "$image" -ec '
   for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
-    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm mcp-grafana; do
+    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm mcp-grafana \
+    task golangci-lint; do
     command -v "$tool"
   done
   test "$(pnpm --version)" = "$EXPECTED_PNPM"
   opencode --version
   mcp-grafana --version
+  task --version
+  golangci-lint version
   tsc --version
   test -w "$(dirname "$PNPM_HOME")"
 '
@@ -87,10 +90,9 @@ OPENCODE_TEST_URL="$url" OPENCODE_PASSWORD="$password" \
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
 
-# Re-entering startup must preserve persistent edits.
+# Re-entering startup must restore the image's instructions over a stale copy.
 docker exec "$name" sh -ec '
-  printf "\nPersistent test instructions\n" >> "$XDG_CONFIG_HOME/opencode/AGENTS.md"
-  cp "$XDG_CONFIG_HOME/opencode/AGENTS.md" "$HOME/expected-agents.md"
+  printf "\nStale instructions\n" >> "$XDG_CONFIG_HOME/opencode/AGENTS.md"
   /usr/local/bin/entrypoint.sh true
-  cmp "$HOME/expected-agents.md" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+  cmp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 '

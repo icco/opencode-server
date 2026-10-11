@@ -30,8 +30,16 @@ test("Superpowers is immutable-pinned and replaces Orchestra", async () => {
   assert.match(instructions, /Use Superpowers skills/);
 });
 
+test("image-owned skills are discoverable", async () => {
+  assert.deepEqual(config.skills, ["/etc/opencode/skills"]);
+  for (const name of ["commit-push-pr", "go-repo"]) {
+    const skill = await readFile(new URL(`../skills/${name}/SKILL.md`, import.meta.url), "utf8");
+    assert.match(skill, new RegExp(`^---\nname: ${name}\ndescription: .+\n---\n`));
+  }
+});
+
 test("existing providers, MCP integrations and quota are preserved", () => {
-  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "grafana", "karakeep", "lunchmoney"]);
+  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "grafana", "karakeep", "lunchmoney", "notion"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.2"));
   assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
   assert.deepEqual(config.agents.build.permissions, [{ action: "*", resource: "*", effect: "allow" }]);
