@@ -10,6 +10,35 @@
     "buffer": 10000
   },
   "agents": {
+    "build": {
+      "permissions": [
+        { "action": "*", "resource": "*", "effect": "allow" }
+      ]
+    },
+    "general": {
+      "permissions": [
+        { "action": "grafana_*", "resource": "*", "effect": "deny" },
+        { "action": "lunchmoney_*", "resource": "*", "effect": "deny" },
+        { "action": "karakeep_*", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" },
+        { "action": "skill", "resource": "*", "effect": "allow" },
+        { "action": "execute", "resource": "*", "effect": "allow" },
+        { "action": "context7_*", "resource": "*", "effect": "allow" }
+      ]
+    },
+    "explore": {
+      "permissions": [
+        { "action": "shell", "resource": "*", "effect": "deny" },
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "grafana_*", "resource": "*", "effect": "deny" },
+        { "action": "lunchmoney_*", "resource": "*", "effect": "deny" },
+        { "action": "karakeep_*", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" },
+        { "action": "skill", "resource": "*", "effect": "allow" },
+        { "action": "execute", "resource": "*", "effect": "allow" },
+        { "action": "context7_*", "resource": "*", "effect": "allow" }
+      ]
+    },
     "title": {
       "model": "github-copilot/gpt-5.4-mini"
     },
@@ -66,7 +95,7 @@
   "plugins": [
     "opencode-gemini-auth@2.0.1",
     "opencode-wakatime@1.4.0",
-    "superpowers@git+https://github.com/obra/superpowers.git#7f043e5eaf3522dc19178c673b76328de9b0c355",
+    "superpowers@git+https://github.com/obra/superpowers.git#bb92a77741419a4ab5f06e711a283343f1ada0c3",
     "@slkiser/opencode-quota@5.0.2"
   ],
   "experimental": {
@@ -87,12 +116,5 @@
         "effect": "allow"
       }
     ]
-  },
-  "permissions": [
-    {
-      "action": "*",
-      "resource": "*",
-      "effect": "allow"
-    }
-  ]
+  }
 }

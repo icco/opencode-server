@@ -33,7 +33,8 @@ test("Superpowers is immutable-pinned and replaces Orchestra", async () => {
 test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "grafana", "karakeep", "lunchmoney"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.2"));
-  assert.deepEqual(config.permissions, [{ action: "*", resource: "*", effect: "allow" }]);
+  assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
+  assert.deepEqual(config.agents.build.permissions, [{ action: "*", resource: "*", effect: "allow" }]);
 });
 
 test("runtime conversion preserves JSONC overrides and rejects malformed input", async () => {

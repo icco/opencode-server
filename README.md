@@ -108,6 +108,12 @@ agent uses native skills for planning, debugging, TDD, review, and verification.
 Superpowers registers its skills and injects its bootstrap into top-level sessions;
 native subagents can load skills without restarting the controller workflow.
 
+Only Build receives the blanket tool allow. General can implement and test, while
+Explore remains read-only; both native subagents are denied Grafana, Lunch Money,
+Karakeep, and further delegation. They may use Context7 through Code Mode, whose
+nested calls enforce each tool's permissions. These are tool boundaries, not OS
+isolation: General's shell still runs with the server user's authority.
+
 Repository edits must run in Git worktrees under the shared workspace root:
 `/data/workspace/.worktrees/<repository>/<task>`. Create the task branch before
 editing and move the session there. OpenCode's native worktree API also uses

@@ -95,6 +95,19 @@ try {
   }
   for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "context7_query-docs"])
     assert.equal(permission(lead, action), "allow", `lead can use ${action}`);
+  const general = agents.find(a => a.id === "general");
+  const explore = agents.find(a => a.id === "explore");
+  for (const agent of [general, explore]) {
+    assert.ok(agent);
+    for (const action of ["grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "subagent"])
+      assert.equal(permission(agent, action), "deny", `${agent.id} cannot use ${action}`);
+    for (const action of ["read", "glob", "grep", "webfetch", "websearch", "skill", "execute", "context7_query-docs"])
+      assert.equal(permission(agent, action), "allow", `${agent.id} can use ${action}`);
+  }
+  for (const action of ["edit", "shell"])
+    assert.equal(permission(explore, action), "deny", `explore cannot use ${action}`);
+  for (const action of ["edit", "shell"])
+    assert.equal(permission(general, action), "allow", `general can implement and test with ${action}`);
   const skills = (await request("/api/skill")).data;
   for (const id of ["using-superpowers", "brainstorming", "test-driven-development", "using-git-worktrees", "verification-before-completion"])
     assert.ok(skills.some(skill => skill.id === id), `missing Superpowers skill ${id}`);

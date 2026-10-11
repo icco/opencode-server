@@ -9,7 +9,8 @@
 - [x] Upgrade available npm, runtime image, and GitHub Action dependencies; no outdated direct npm dependencies remain.
 - [x] Commit verified changes and open draft PR #16.
 - [x] Obtain independent review: no critical or important findings; tests independently passed.
-- [ ] Pass Docker build/smoke CI on amd64 and arm64 before merge.
+- [x] Pass Docker build/smoke CI on amd64 and arm64 for commit e432977.
+- [ ] Re-run both architecture checks after Copilot review fixes before merge.
 
 ## Follow-up test coverage
 
