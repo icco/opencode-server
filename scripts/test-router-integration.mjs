@@ -47,16 +47,17 @@ try {
     const { buildConfig } = await import("./build-config.mjs");
     await mkdir(directory, { recursive: true });
     await mkdir(join(home, "config/opencode"), { recursive: true });
-    await writeFile(join(home, "runtime.json"), JSON.stringify(await buildConfig()));
+    await writeFile(join(home, "runtime.json"), JSON.stringify({ ...await buildConfig(), skills: [join(root, "skills")] }));
     await copyFile(join(root, "AGENTS.md"), join(home, "config/opencode/AGENTS.md"));
     // Keep the host's config, database overrides, and credentials out of this server.
     const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
-      !/^(OPENCODE_|ORCHESTRA_|WAKATIME_|GRAFANA_|LUNCHMONEY_|KARAKEEP_|GOOGLE_|GIT_CONFIG_|GH_|GITHUB_)|API_KEY|TOKEN/.test(key)));
+      !/^(OPENCODE_|ORCHESTRA_|WAKATIME_|GRAFANA_|LUNCHMONEY_|KARAKEEP_|NOTION_|GOOGLE_|GIT_CONFIG_|GH_|GITHUB_)|API_KEY|TOKEN/.test(key)));
     const env = { ...inherited, HOME: home, XDG_CONFIG_HOME: join(home, "config"),
       XDG_DATA_HOME: join(home, "data"), XDG_STATE_HOME: join(home, "state"), XDG_CACHE_HOME: join(home, "cache"),
       OPENCODE_CONFIG: join(home, "runtime.json"),
       OPENCODE_PASSWORD: password, LUNCHMONEY_API_TOKEN: "catalog-test-only",
-      KARAKEEP_API_ADDR: "http://127.0.0.1:1", KARAKEEP_API_KEY: "catalog-test-only" };
+      KARAKEEP_API_ADDR: "http://127.0.0.1:1", KARAKEEP_API_KEY: "catalog-test-only",
+      NOTION_TOKEN: "catalog-test-only" };
     child = spawn("opencode", ["serve", "--hostname", "127.0.0.1", "--port", new URL(url).port],
       { cwd: directory, env, stdio: ["ignore", "pipe", "pipe"] });
     child.on("error", error => { spawnError = error; });
@@ -93,13 +94,13 @@ try {
   function permission(agent, action) {
     return agent.permissions.filter(rule => new RegExp(`^${rule.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
   }
-  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "context7_query-docs"])
+  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_API-post-search", "context7_query-docs"])
     assert.equal(permission(lead, action), "allow", `lead can use ${action}`);
   const general = agents.find(a => a.id === "general");
   const explore = agents.find(a => a.id === "explore");
   for (const agent of [general, explore]) {
     assert.ok(agent);
-    for (const action of ["grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "subagent"])
+    for (const action of ["grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_API-post-search", "subagent"])
       assert.equal(permission(agent, action), "deny", `${agent.id} cannot use ${action}`);
     for (const action of ["read", "glob", "grep", "webfetch", "websearch", "skill", "execute", "context7_query-docs"])
       assert.equal(permission(agent, action), "allow", `${agent.id} can use ${action}`);
@@ -111,13 +112,15 @@ try {
   const skills = (await request("/api/skill")).data;
   for (const id of ["using-superpowers", "brainstorming", "test-driven-development", "using-git-worktrees", "verification-before-completion"])
     assert.ok(skills.some(skill => skill.id === id), `missing Superpowers skill ${id}`);
+  for (const id of ["commit-push-pr", "icco-go-repo"])
+    assert.ok(skills.some(skill => skill.id === id), `missing image skill ${id}`);
   const entries = await request("/api/config");
   const runtime = entries.findLast(entry => entry.info?.worktree)?.info;
   assert.equal(runtime.default_agent, "build");
   assert.equal(runtime.worktree.directory, "/data/workspace/.worktrees");
   await until(async () => {
     const { data } = await request("/api/mcp");
-    for (const name of external ? ["lunchmoney", "grafana", "karakeep"] : ["lunchmoney", "karakeep"]) {
+    for (const name of external ? ["lunchmoney", "grafana", "karakeep", "notion"] : ["lunchmoney", "karakeep", "notion"]) {
       assert.equal(data.find(server => server.name === name)?.status.status, "connected", JSON.stringify(data));
     }
     assert.ok(data.some(server => server.name === "context7"));

@@ -4,10 +4,17 @@ FROM golang AS yq
 ARG YQ_VERSION=v4.54.1
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
+FROM golang AS gotools
+ARG TASK_VERSION=v3.54.0
+ARG GOLANGCI_LINT_VERSION=v2.14.0
+RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/go-task/task/v3/cmd/task@${TASK_VERSION}" \
+    && CGO_ENABLED=0 GOBIN=/out go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
+
 FROM node:26.11.1-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
+COPY --from=gotools /out/task /out/golangci-lint /usr/local/bin/
 COPY --from=grafana/mcp-grafana:2.0.2@sha256:78d208116ec52b09b44f0eca66892073b39aefcb64483c54d43255c8eab7e97a /app/mcp-grafana /usr/local/bin/mcp-grafana
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -57,6 +64,7 @@ ENV HOME=/data \
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY AGENTS.md /etc/opencode/AGENTS.md
+COPY skills /etc/opencode/skills
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \

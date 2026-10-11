@@ -9,12 +9,15 @@ expected_pnpm=$(node -p 'require("./package.json").packageManager.split("@")[1]'
 # Check script dependencies as the non-root runtime user, without starting the server.
 docker run --rm -e "EXPECTED_PNPM=$expected_pnpm" --entrypoint sh "$image" -ec '
   for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
-    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm mcp-grafana; do
+    wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm mcp-grafana \
+    task golangci-lint cmp; do
     command -v "$tool"
   done
   test "$(pnpm --version)" = "$EXPECTED_PNPM"
   opencode --version
   mcp-grafana --version
+  task --version
+  golangci-lint version
   tsc --version
   test -w "$(dirname "$PNPM_HOME")"
 '
@@ -53,6 +56,7 @@ docker run -d --name "$name" \
   -e LUNCHMONEY_API_TOKEN=catalog-test-only \
   -e KARAKEEP_API_ADDR=http://127.0.0.1:1 \
   -e KARAKEEP_API_KEY=catalog-test-only \
+  -e NOTION_TOKEN=catalog-test-only \
   "$image"
 cleanup() {
   docker logs "$name"
@@ -93,4 +97,12 @@ docker exec "$name" sh -ec '
   cp "$XDG_CONFIG_HOME/opencode/AGENTS.md" "$HOME/expected-agents.md"
   /usr/local/bin/entrypoint.sh true
   cmp "$HOME/expected-agents.md" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+'
+
+# An unedited copy seeded by an earlier image must pick up the new instructions.
+docker exec "$name" sh -ec '
+  printf "Previous image instructions\n" > "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+  cp "$XDG_CONFIG_HOME/opencode/AGENTS.md" "$XDG_STATE_HOME/opencode/AGENTS.md.seeded"
+  /usr/local/bin/entrypoint.sh true
+  cmp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 '
