@@ -1,14 +1,14 @@
-FROM golang:1.27.1-trixie AS golang
+FROM golang:1.27.2-trixie AS golang
 
 FROM golang AS yq
 ARG YQ_VERSION=v4.54.1
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
-FROM node:26.10.0-trixie-slim AS tools
+FROM node:26.11.1-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
-COPY --from=grafana/mcp-grafana:2.0.1@sha256:87b48c8fa1a09d00befe361e009be9ab85343ab95b7f2ebb374c1051832985b9 /app/mcp-grafana /usr/local/bin/mcp-grafana
+COPY --from=grafana/mcp-grafana:2.0.2@sha256:78d208116ec52b09b44f0eca66892073b39aefcb64483c54d43255c8eab7e97a /app/mcp-grafana /usr/local/bin/mcp-grafana
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
@@ -18,9 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
-ARG OPENCODE_VERSION=2.0.24
+ARG OPENCODE_VERSION=2.0.26
 ARG TYPESCRIPT_VERSION=7.0.2
-ARG PNPM_VERSION=12.10.1
+ARG PNPM_VERSION=12.11.2
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}

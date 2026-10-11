@@ -70,7 +70,7 @@ api_key = <your key from https://wakatime.com/api-key>
   finance queries and updates through Lunch Money's v2 API. Recreate the container
   after setting the token.
 - **Grafana:** the image bundles [Grafana MCP](https://github.com/grafana/mcp-grafana)
-  v2.0.1 for read-only dashboards, alerts, annotations, Loki logs (LogQL), and
+  v2.0.2 for read-only dashboards, alerts, annotations, Loki logs (LogQL), and
   Prometheus metrics (PromQL). Set `GRAFANA_URL` and
   `GRAFANA_SERVICE_ACCOUNT_TOKEN` in the container environment, then recreate it. Use a
   Grafana service account with the Viewer role and access to the required
