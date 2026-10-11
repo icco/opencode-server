@@ -33,7 +33,7 @@
 - Run a command that reads the state before claiming it: PR merged, file tracked, field present, deploy live. An empty result means "cannot see", not "does not exist".
 - If an error or pending run would confirm the work, go and look. Do not end with an offer to check.
 - Validate approaches that touch external systems against current primary docs, not memory, and cite the URLs.
-- Prefer CI for full test suites: push and read the checks. Run locally only to iterate on one failing test or lint error, and never quote a local pass once CI has run.
+- Prefer CI for full test suites. Push and read the checks. Run locally only to iterate on one failing test or lint error, and never quote a local pass once CI has run.
 - When a repository ships a production-like local setup (Docker, Compose, a run script), test with it rather than a quick substitute.
 - Pin third-party GitHub Actions by commit SHA after checking `gh api repos/<owner>/<repo>/releases/latest`.
 - When changing CI, trace which tool reads which variable. A secret existing in the repository does not mean the failing step uses it.

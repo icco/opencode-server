@@ -13,5 +13,5 @@ description: Conventions for creating or maintaining Go repositories under githu
 - Releases use goreleaser, tagged by `PaulHatch/semantic-version`. Wrap `major_pattern` and `minor_pattern` in `/ /` so scoped titles such as `feat(api):` count.
 - The PR title drives both the conventional-commits check and the version bump. Fix a bad title with `gh pr edit --title`.
 - GitHub releases are immutable, so a failed goreleaser run cannot be retried for the same tag. Cut a new tag.
-- `GET /repos/{owner}/{repo}` reports the user's permissions, not the token's. Probe a fine-grained PAT with a `PUT /contents/<existing file>` that sends an all-zero `sha`: 403 means no write access, 409 means write access and nothing changed.
+- `GET /repos/{owner}/{repo}` reports the user's permissions, not the token's. Probe a fine-grained PAT with a `PUT /contents/<existing file>` that sends an all-zero `sha`. A 403 means no write access, and a 409 means write access with nothing changed.
 - READMEs show `go get`, a usage example, and a link to godoc. No Go Report Card badge.
