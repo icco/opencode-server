@@ -31,13 +31,14 @@ ARG PNPM_VERSION=12.11.2
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
+COPY pnpm-workspace.yaml /opt/pnpm-config/pnpm/config.yaml
 RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; esac \
     && mkdir -p /opt/pnpm-cli "$PNPM_HOME" \
     && curl --fail --silent --show-error --location \
       "https://registry.npmjs.org/@pnpm/exe.linux-${arch}/-/exe.linux-${arch}-${PNPM_VERSION}.tgz" \
       | tar -xz --strip-components=1 -C /opt/pnpm-cli \
     && ln -s /opt/pnpm-cli/pnpm /usr/local/bin/pnpm \
-    && pnpm --allow-build=@opencode/cli add --global \
+    && XDG_CONFIG_HOME=/opt/pnpm-config pnpm --allow-build=@opencode/cli add --global \
       "@opencode/cli@${OPENCODE_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
     && opencode --version
 
