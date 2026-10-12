@@ -48,7 +48,7 @@ Set the variables below before creating the container. For remote servers, open 
 | [Karakeep](https://docs.karakeep.app/integrations/mcp) | `KARAKEEP_API_KEY` and `KARAKEEP_API_ADDR` (defaults to `https://hoard.natwelch.com`); includes write tools. |
 | [Lunch Money](https://github.com/akutishevsky/lunchmoney-mcp) | `LUNCHMONEY_API_TOKEN` from [developer settings](https://my.lunchmoney.app/developers); required to start its MCP server. |
 | [Notion](https://developers.notion.com/guides/mcp/overview) | Remote server at `https://mcp.notion.com/mcp`. |
-| Robinhood | Remote trading server at `https://agent.robinhood.com/mcp/trading`. |
+| [Robinhood](https://robinhood.com/us/en/support/articles/onboarding-an-external-agent/) | Remote trading server at `https://agent.robinhood.com/mcp/trading`; complete account onboarding during sign-in. |
 
 Check connections with:
 
