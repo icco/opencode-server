@@ -43,6 +43,8 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.2"));
   assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
   assert.deepEqual(config.agents.build.permissions, [{ action: "*", resource: "*", effect: "allow" }]);
+  for (const name of ["general", "explore"])
+    assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
 });
 
 test("runtime conversion preserves JSONC overrides and rejects malformed input", async () => {

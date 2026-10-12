@@ -93,13 +93,13 @@ try {
   function permission(agent, action) {
     return agent.permissions.filter(rule => new RegExp(`^${rule.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
   }
-  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_notion-search", "context7_query-docs"])
+  for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_notion-search", "robinhood_test_tool", "context7_query-docs"])
     assert.equal(permission(lead, action), "allow", `lead can use ${action}`);
   const general = agents.find(a => a.id === "general");
   const explore = agents.find(a => a.id === "explore");
   for (const agent of [general, explore]) {
     assert.ok(agent);
-    for (const action of ["grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_notion-search", "subagent"])
+    for (const action of ["grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_notion-search", "robinhood_test_tool", "subagent"])
       assert.equal(permission(agent, action), "deny", `${agent.id} cannot use ${action}`);
     for (const action of ["read", "glob", "grep", "webfetch", "websearch", "skill", "execute", "context7_query-docs"])
       assert.equal(permission(agent, action), "allow", `${agent.id} can use ${action}`);
