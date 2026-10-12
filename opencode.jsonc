@@ -54,6 +54,10 @@
         "type": "remote",
         "url": "https://mcp.notion.com/mcp"
       },
+      "robinhood": {
+        "type": "remote",
+        "url": "https://agent.robinhood.com/mcp/trading"
+      },
       "karakeep": {
         "type": "local",
         "command": [
