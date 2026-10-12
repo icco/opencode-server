@@ -39,7 +39,7 @@ test("image-owned skills are discoverable", async () => {
 });
 
 test("existing providers, MCP integrations and quota are preserved", () => {
-  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "grafana", "karakeep", "lunchmoney", "notion"]);
+  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "grafana", "karakeep", "lunchmoney", "notion", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.2"));
   assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
   assert.deepEqual(config.agents.build.permissions, [{ action: "*", resource: "*", effect: "allow" }]);

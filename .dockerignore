@@ -8,5 +8,6 @@
 !orchestra.jsonc
 !package.json
 !pnpm-lock.yaml
+!pnpm-workspace.yaml
 !scripts/
 !scripts/build-config.mjs
