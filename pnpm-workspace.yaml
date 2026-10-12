@@ -1,3 +1,4 @@
+minimumReleaseAgeStrict: true
 minimumReleaseAgeExclude:
   - '@opencode/ai@2.0.27'
   - '@opencode/client@2.0.27'
