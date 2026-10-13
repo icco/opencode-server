@@ -12,7 +12,8 @@ if [ "${#OPENCODE_PASSWORD}" -lt 32 ]; then
   exit 1
 fi
 
-ui_password=${OPENCHAMBER_UI_PASSWORD:-}
+# OpenChamber trims the password before use, so measure what it will store.
+ui_password=$(printf "%s" "${OPENCHAMBER_UI_PASSWORD:-}" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*\$//")
 if [ "${1:-}" = openchamber ] && [ "${#ui_password}" -lt 32 ]; then
   echo "OPENCHAMBER_UI_PASSWORD must contain at least 32 characters; generate it with openssl rand -hex 32" >&2
   exit 1
