@@ -12,6 +12,13 @@ if [ "${#OPENCODE_PASSWORD}" -lt 32 ]; then
   exit 1
 fi
 
+# OpenChamber trims the password before use, so measure what it will store.
+ui_password=$(printf "%s" "${OPENCHAMBER_UI_PASSWORD:-}" | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*\$//")
+if [ "${1:-}" = openchamber ] && [ "${#ui_password}" -lt 32 ]; then
+  echo "OPENCHAMBER_UI_PASSWORD must contain at least 32 characters; generate it with openssl rand -hex 32" >&2
+  exit 1
+fi
+
 mkdir -p "$XDG_CONFIG_HOME/opencode" "$XDG_CONFIG_HOME/gh" "$XDG_DATA_HOME/opencode" \
   "$XDG_STATE_HOME/opencode" "$XDG_CACHE_HOME/opencode" "$HOME/workspace/.worktrees"
 

@@ -7,7 +7,7 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    pids_limit: 512
+    pids_limit: 2048
     mem_limit: 4g
     cpus: 2
     environment:
@@ -17,11 +17,58 @@ services:
       LUNCHMONEY_API_TOKEN: ${LUNCHMONEY_API_TOKEN:-}
       GRAFANA_URL: ${GRAFANA_URL:-}
       GRAFANA_SERVICE_ACCOUNT_TOKEN: ${GRAFANA_SERVICE_ACCOUNT_TOKEN:-}
-      KARAKEEP_API_ADDR: ${KARAKEEP_API_ADDR:-https://hoard.natwelch.com}
+      KARAKEEP_API_ADDR: ${KARAKEEP_API_ADDR:-}
       KARAKEEP_API_KEY: ${KARAKEEP_API_KEY:-}
       OPENCODE_PASSWORD: ${OPENCODE_PASSWORD:?Set OPENCODE_PASSWORD}
+    volumes:
+      - data:/data
+      - type: bind
+        source: ${HOME}/.ssh
+        target: /data/.ssh
+        read_only: true
+        bind:
+          create_host_path: false
+  openchamber:
+    image: ghcr.io/icco/opencode-server:main
+    restart: unless-stopped
+    stop_grace_period: 30s
+    command:
+      - openchamber
+      - serve
+      - --foreground
+      - --host
+      - 0.0.0.0
+      - --port
+      - "3000"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 2048
+    mem_limit: 4g
+    cpus: 2
+    environment:
+      GH_TOKEN: ${GH_TOKEN:-}
+      OPENCODE_HOST: http://opencode:4096
+      OPENCODE_SKIP_START: "true"
+      OPENCODE_PASSWORD: ${OPENCODE_PASSWORD:?Set OPENCODE_PASSWORD}
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_PASSWORD:?Set OPENCODE_PASSWORD}
+      OPENCHAMBER_UI_PASSWORD: ${OPENCHAMBER_UI_PASSWORD:?Set OPENCHAMBER_UI_PASSWORD}
+      OPENCHAMBER_ENTERPRISE_MODE: "1"
+      OPENCHAMBER_ALLOW_NETWORK_ACCESS: "1"
+    depends_on:
+      opencode:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - /usr/local/bin/openchamber-healthcheck.sh
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
     ports:
-      - 127.0.0.1:4096:4096
+      - 127.0.0.1:3000:3000
     volumes:
       - data:/data
       - type: bind

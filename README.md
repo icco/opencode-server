@@ -1,6 +1,6 @@
 # OpenCode Server
 
-Self-hosted [OpenCode V2](https://opencode.ai/v2/docs/) web UI and API. The image `ghcr.io/icco/opencode-server:main` supports amd64 and arm64.
+Self-hosted [OpenCode V2](https://opencode.ai/v2/docs/) behind the [OpenChamber](https://docs.openchamber.dev/) web UI. The image `ghcr.io/icco/opencode-server:main` supports amd64 and arm64.
 
 ## Run
 
@@ -9,10 +9,11 @@ From this checkout, with Docker Compose and OpenSSL installed:
 ```sh
 mkdir -p "$HOME/.ssh"
 export OPENCODE_PASSWORD="$(openssl rand -hex 32)"
+export OPENCHAMBER_UI_PASSWORD="$(openssl rand -hex 32)"
 docker compose up -d
 ```
 
-Open <http://localhost:4096> and sign in as `opencode` with that password. Keep the password in your deployment's secret store and export it for later Compose commands; startup requires at least 32 characters.
+Open <http://localhost:3000> and sign in with `OPENCHAMBER_UI_PASSWORD`. Keep both passwords in your deployment's secret store and export them for later Compose commands; startup requires at least 32 characters for each. OpenCode has no host port; only OpenChamber reaches it, over the Compose network.
 
 The `/data` volume preserves repositories, sessions, credentials, and caches. Keep repositories in `/data/workspace` and back up the volume. Bind mounts must be writable by UID/GID 1000. Compose also mounts the host's `~/.ssh` read-only; keys must be readable by UID 1000, and `known_hosts` must be maintained on the host.
 
@@ -20,7 +21,7 @@ To update the image or apply changed environment variables:
 
 ```sh
 docker compose pull
-docker compose up -d --force-recreate opencode
+docker compose up -d --force-recreate
 ```
 
 ## Connect accounts
@@ -70,7 +71,18 @@ To replace the image defaults, install dependencies, edit `opencode.jsonc`, run 
 
 ## Hosting
 
-Compose binds only to `127.0.0.1:4096`. Put an HTTPS reverse proxy in front for remote access. A containerized proxy can share a network and use `opencode:4096` instead of the host port mapping.
+Compose binds OpenChamber only to `127.0.0.1:3000`. Put an HTTPS reverse proxy in front for remote access, following [OpenChamber's reverse proxy guide](https://docs.openchamber.dev/reverse-proxy/). With Caddy:
+
+```caddyfile
+code.example.com {
+	respond /health* 404
+	reverse_proxy 127.0.0.1:3000 {
+		flush_interval -1
+	}
+}
+```
+
+`/health` is unauthenticated and reports diagnostics, so keep it off the internet. OpenChamber runs in [enterprise mode](https://docs.openchamber.dev/security/#enterprise-mode), which disables the relay and untrusted extensions. Login is rate limited; add a passkey under Settings after first sign-in.
 
 The container runs as UID 1000 with dropped capabilities and resource limits. Login grants code execution and access to stored credentials; this is a trusted-user service, not a multi-tenant sandbox.
 

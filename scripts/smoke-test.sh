@@ -50,7 +50,7 @@ test "$status" = 1
 
 docker run -d --name "$name" \
   --cap-drop ALL --security-opt no-new-privileges:true \
-  --pids-limit 512 --memory 4g --cpus 2 \
+  --pids-limit 2048 --memory 4g --cpus 2 \
   -p 127.0.0.1::4096 \
   -e "OPENCODE_PASSWORD=$password" \
   -e LUNCHMONEY_API_TOKEN=catalog-test-only \
@@ -96,3 +96,48 @@ docker exec "$name" sh -ec '
   /usr/local/bin/entrypoint.sh true
   cmp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 '
+
+# OpenChamber must refuse to start without a strong UI password.
+for ui in "" short " a                                    "; do
+  status=0
+  timeout 15 docker run --rm -e "OPENCODE_PASSWORD=$password" -e "OPENCHAMBER_UI_PASSWORD=$ui" \
+    "$image" openchamber serve --foreground || status=$?
+  test "$status" = 1
+done
+
+network="opencode-test-net-$$"
+chamber="openchamber-test-$$"
+ui_password=$(openssl rand -hex 24)
+docker network create "$network"
+docker network connect --alias opencode "$network" "$name"
+docker run -d --name "$chamber" --network "$network" \
+  --cap-drop ALL --security-opt no-new-privileges:true \
+  -p 127.0.0.1::3000 \
+  -e OPENCODE_HOST=http://opencode:4096 \
+  -e OPENCODE_SKIP_START=true \
+  -e "OPENCODE_PASSWORD=$password" \
+  -e "OPENCODE_SERVER_PASSWORD=$password" \
+  -e "OPENCHAMBER_UI_PASSWORD=$ui_password" \
+  -e OPENCHAMBER_ENTERPRISE_MODE=1 \
+  -e OPENCHAMBER_ALLOW_NETWORK_ACCESS=1 \
+  "$image" openchamber serve --foreground --host 0.0.0.0 --port 3000
+trap 'docker logs "$chamber" || true; docker rm -f "$chamber" || true; cleanup; docker network rm "$network" || true' EXIT
+chamber_url="http://127.0.0.1:$(docker port "$chamber" 3000/tcp | cut -d: -f2)"
+
+for attempt in $(seq 1 40); do
+  if docker exec "$chamber" /usr/local/bin/openchamber-healthcheck.sh; then
+    break
+  fi
+  printf 'Waiting for OpenChamber (%s/40)\n' "$attempt"
+  sleep 3
+done
+docker exec "$chamber" /usr/local/bin/openchamber-healthcheck.sh
+
+test "$(curl -s -o /dev/null -w '%{http_code}' "$chamber_url/api/session")" = 401
+test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' \
+  -d '{"password":"wrong-password"}' "$chamber_url/auth/session")" = 401
+jar=$(mktemp)
+curl --fail -s -c "$jar" -H 'Content-Type: application/json' \
+  -d "{\"password\":\"$ui_password\"}" "$chamber_url/auth/session" >/dev/null
+curl --fail -s -b "$jar" "$chamber_url/api/session" | jq -e 'type == "array" or type == "object"' >/dev/null
+rm -f "$jar"

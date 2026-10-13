@@ -2,6 +2,7 @@
 !Dockerfile
 !entrypoint.sh
 !healthcheck.sh
+!openchamber-healthcheck.sh
 !AGENTS.md
 !skills/
 !opencode.jsonc
