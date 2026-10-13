@@ -17,8 +17,9 @@ jobs:
         run: |
           sh -n entrypoint.sh
           sh -n healthcheck.sh
+          sh -n openchamber-healthcheck.sh
           bash -n scripts/smoke-test.sh
-          shellcheck entrypoint.sh healthcheck.sh scripts/smoke-test.sh
+          shellcheck entrypoint.sh healthcheck.sh openchamber-healthcheck.sh scripts/smoke-test.sh
       - name: Set up pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - name: Set up Node.js
@@ -32,4 +33,5 @@ jobs:
       - name: Validate Compose
         env:
           OPENCODE_PASSWORD: validation-only-not-a-deployment-password
+          OPENCHAMBER_UI_PASSWORD: validation-only-not-a-deployment-password
         run: docker compose config --quiet
