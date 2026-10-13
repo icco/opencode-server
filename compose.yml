@@ -44,9 +44,9 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    pids_limit: 512
-    mem_limit: 2g
-    cpus: 1
+    pids_limit: 2048
+    mem_limit: 4g
+    cpus: 2
     environment:
       GH_TOKEN: ${GH_TOKEN:-}
       OPENCODE_HOST: http://opencode:4096
