@@ -87,6 +87,16 @@ docker exec "$name" sh -ec '
 OPENCODE_TEST_URL="$url" OPENCODE_PASSWORD="$password" \
   node scripts/test-router-integration.mjs
 
+curl --fail --silent --show-error --user "opencode:$password" \
+  "$url/api/plugin?location%5Bdirectory%5D=/data/workspace" \
+  | jq -e '.data[] | select(.id == "i-have-adhd") | .state.status == "active"'
+curl --fail --silent --show-error --user "opencode:$password" \
+  "$url/api/skill?location%5Bdirectory%5D=/data/workspace" \
+  | jq -e '.data[] | select(.id == "i-have-adhd") | .content | contains("## Persistence") and contains("### 10.")'
+curl --fail --silent --show-error --user "opencode:$password" \
+  "$url/api/command?location%5Bdirectory%5D=/data/workspace" \
+  | jq -e '.data[] | select(.name == "i-have-adhd")'
+
 # Credentials and workspaces must be writable by the non-root runtime user.
 docker exec "$name" sh -c 'test "$(id -u)" = 1000 && test -w /data/workspace && test -w /data/.local/share/opencode'
 

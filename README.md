@@ -63,6 +63,7 @@ Grafana and Karakeep can connect before their credentials are validated; check a
 - **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Tool permissions do not sandbox shell access.
 - [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr` and `go-repo`](skills/). [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
 - [OpenCode Quota](https://github.com/slkiser/opencode-quota) provides `/quota` and `/quota_status`.
+- [i-have-adhd](https://github.com/ayghri/i-have-adhd) provides `/i-have-adhd` for ADHD-friendly output until you say `stop adhd mode` or `normal mode`. The image bundles a commit-pinned upstream plugin; for [always-on mode](https://github.com/ayghri/i-have-adhd/blob/main/INSTALL.md#opencode), run `docker compose exec opencode touch /data/.config/opencode/.i-have-adhd-always`.
 - Defaults and pinned plugins live in [`opencode.jsonc`](opencode.jsonc). The image converts it to `/etc/opencode/opencode.json`; project `opencode.json(c)` files can override settings. See the [V2 configuration guide](https://opencode.ai/v2/docs/config).
 - Each startup copies the image's [`AGENTS.md`](AGENTS.md) to `/data/.config/opencode/AGENTS.md`, replacing local edits. Change instructions in this repository and rebuild.
 

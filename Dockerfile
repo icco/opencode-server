@@ -49,6 +49,18 @@ COPY scripts/build-config.mjs ./scripts/build-config.mjs
 RUN pnpm install --frozen-lockfile --ignore-scripts --no-optional \
     && node scripts/build-config.mjs /build/runtime.json
 
+FROM tools AS i-have-adhd
+ARG I_HAVE_ADHD_COMMIT=1ecea1993b7fce257ffbd686c070948b5e07eda6
+WORKDIR /build/i-have-adhd
+RUN set -eu; \
+    for file in LICENSE .opencode/plugins/i-have-adhd.mjs \
+      .opencode/command/i-have-adhd.md skills/i-have-adhd/SKILL.md; do \
+      mkdir -p "$(dirname "$file")"; \
+      curl --fail --silent --show-error --location \
+        "https://raw.githubusercontent.com/ayghri/i-have-adhd/${I_HAVE_ADHD_COMMIT}/$file" \
+        -o "$file"; \
+    done
+
 FROM tools
 
 ENV HOME=/data \
@@ -64,6 +76,7 @@ ENV HOME=/data \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
+COPY --from=i-have-adhd /build/i-have-adhd /opt/i-have-adhd
 COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY skills /etc/opencode/skills
 COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
