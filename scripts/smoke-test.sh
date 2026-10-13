@@ -50,7 +50,7 @@ test "$status" = 1
 
 docker run -d --name "$name" \
   --cap-drop ALL --security-opt no-new-privileges:true \
-  --pids-limit 512 --memory 4g --cpus 2 \
+  --pids-limit 2048 --memory 4g --cpus 2 \
   -p 127.0.0.1::4096 \
   -e "OPENCODE_PASSWORD=$password" \
   -e LUNCHMONEY_API_TOKEN=catalog-test-only \
@@ -98,9 +98,12 @@ docker exec "$name" sh -ec '
 '
 
 # OpenChamber must refuse to start without a strong UI password.
-status=0
-timeout 15 docker run --rm -e "OPENCODE_PASSWORD=$password" "$image" openchamber serve --foreground || status=$?
-test "$status" = 1
+for ui in "" short " a                                    "; do
+  status=0
+  timeout 15 docker run --rm -e "OPENCODE_PASSWORD=$password" -e "OPENCHAMBER_UI_PASSWORD=$ui" \
+    "$image" openchamber serve --foreground || status=$?
+  test "$status" = 1
+done
 
 network="opencode-test-net-$$"
 chamber="openchamber-test-$$"
