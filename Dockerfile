@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
 ARG OPENCODE_VERSION=2.0.27
+ARG OPENCHAMBER_VERSION=2.2.0
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.11.2
 ARG TARGETARCH
@@ -38,9 +39,10 @@ RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; e
       "https://registry.npmjs.org/@pnpm/exe.linux-${arch}/-/exe.linux-${arch}-${PNPM_VERSION}.tgz" \
       | tar -xz --strip-components=1 -C /opt/pnpm-cli \
     && ln -s /opt/pnpm-cli/pnpm /usr/local/bin/pnpm \
-    && XDG_CONFIG_HOME=/opt/pnpm-config pnpm --allow-build=@opencode/cli add --global \
-      "@opencode/cli@${OPENCODE_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
-    && opencode --version
+    && XDG_CONFIG_HOME=/opt/pnpm-config pnpm --allow-build=@opencode/cli --allow-build=node-pty add --global \
+      "@opencode/cli@${OPENCODE_VERSION}" "@openchamber/web@${OPENCHAMBER_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
+    && opencode --version \
+    && openchamber --version
 
 FROM tools AS config
 WORKDIR /build
@@ -66,14 +68,14 @@ ENV HOME=/data \
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY skills /etc/opencode/skills
-COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
+COPY --chmod=755 entrypoint.sh healthcheck.sh openchamber-healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
     && chown -R node:node /data
 
 USER node
 WORKDIR /data/workspace
-EXPOSE 4096
+EXPOSE 4096 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD ["/usr/local/bin/healthcheck.sh"]
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
