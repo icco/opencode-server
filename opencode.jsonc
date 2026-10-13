@@ -3,6 +3,7 @@
   "update": "disable",
   "model": "github-copilot/gpt-6-astra",
   "default_agent": "build",
+  "shell": "/usr/bin/zsh",
   "worktree": {
     "directory": "/data/workspace/.worktrees"
   },
