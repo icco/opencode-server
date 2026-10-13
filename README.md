@@ -75,7 +75,7 @@ Compose binds OpenChamber only to `127.0.0.1:3000`. Put an HTTPS reverse proxy i
 
 ```caddyfile
 code.example.com {
-	respond /health 404
+	respond /health* 404
 	reverse_proxy 127.0.0.1:3000 {
 		flush_interval -1
 	}
