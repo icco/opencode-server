@@ -42,10 +42,10 @@ docker run --rm --entrypoint zsh "$image" -euc '
 
 # Startup must fail promptly when no password is provided.
 status=0
-timeout 15 docker run --rm "$image" || status=$?
+timeout 15 docker run --rm -v /data "$image" || status=$?
 test "$status" = 1
 status=0
-timeout 15 docker run --rm -e OPENCODE_PASSWORD=short "$image" || status=$?
+timeout 15 docker run --rm -v /data -e OPENCODE_PASSWORD=short "$image" || status=$?
 test "$status" = 1
 # Startup must also fail without a volume at /data.
 status=0
@@ -126,7 +126,7 @@ docker exec "$name" sh -ec '
 # OpenChamber must refuse to start without a strong UI password.
 for ui in "" short " a                                    "; do
   status=0
-  timeout 15 docker run --rm -e "OPENCODE_PASSWORD=$password" -e "OPENCHAMBER_UI_PASSWORD=$ui" \
+  timeout 15 docker run --rm -v /data -e "OPENCODE_PASSWORD=$password" -e "OPENCHAMBER_UI_PASSWORD=$ui" \
     "$image" openchamber serve --foreground || status=$?
   test "$status" = 1
 done

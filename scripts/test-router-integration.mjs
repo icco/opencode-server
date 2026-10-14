@@ -90,8 +90,9 @@ try {
   const lead = agents.find(a => a.id === "build");
   assert.ok(lead, "native build agent is available");
   assert.ok(!agents.some(a => a.id.startsWith("orch-")));
-  function permission(agent, action) {
-    return agent.permissions.filter(rule => new RegExp(`^${rule.action.split("*").map(RegExp.escape).join(".*")}$`).test(action)).at(-1)?.effect;
+  const glob = pattern => new RegExp(`^${[...pattern].map(c => c === "*" ? ".*" : c === "?" ? "." : RegExp.escape(c)).join("")}$`, "s");
+  function permission(agent, action, resource = "") {
+    return agent.permissions.filter(rule => glob(rule.action).test(action) && glob(rule.resource).test(resource)).at(-1)?.effect;
   }
   for (const action of ["execute", "grafana_list_datasources", "lunchmoney_get_user", "karakeep_search-bookmarks", "notion_notion-search", "robinhood_test_tool", "context7_query-docs"])
     assert.equal(permission(lead, action), "allow", `lead can use ${action}`);
@@ -108,6 +109,11 @@ try {
     assert.equal(permission(explore, action), "deny", `explore cannot use ${action}`);
   for (const action of ["edit", "shell"])
     assert.equal(permission(general, action), "allow", `general can implement and test with ${action}`);
+  for (const agent of [lead, general]) {
+    assert.equal(permission(agent, "shell", "rm -rf node_modules"), "allow", `${agent.id} can delete project files`);
+    for (const command of ["rm -rf ~/.config", 'rm -rf "$HOME/.local/share/opencode"', 'rm -rf "$XDG_CONFIG_HOME"', "rm -rf .config .local .cache", "rm -rf ~", "rm -rf /data", "rm -rf /data/"])
+      assert.equal(permission(agent, "shell", command), "ask", `${agent.id} asks before ${command}`);
+  }
   const skills = (await request("/api/skill")).data;
   for (const id of ["using-superpowers", "brainstorming", "test-driven-development", "using-git-worktrees", "verification-before-completion"])
     assert.ok(skills.some(skill => skill.id === id), `missing Superpowers skill ${id}`);
