@@ -132,6 +132,9 @@ try {
       assert.ok(data.some(server => server.name === name), `missing ${name}`);
     return true;
   });
+  // Without credentials, a dropped provider policy shows up as OpenCode's free models.
+  const models = (await request("/api/model")).data;
+  assert.ok(models.every(m => ["google", "github-copilot"].includes(m.providerID)), `policies hide other providers' models: ${models.map(m => m.providerID)}`);
   session = (await request("/api/session", { title: "V2 integration test", agent: "build",
     location: { directory } })).data;
   await request(`/api/session/${session.id}/command`, { name: "quota_announcements", text: "" });
