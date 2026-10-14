@@ -42,9 +42,18 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "grafana", "karakeep", "lunchmoney", "notion", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.2"));
   assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
-  assert.deepEqual(config.agents.build.permissions, [{ action: "*", resource: "*", effect: "allow" }]);
+  assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
+});
+
+test("agents ask before deleting server state under the home directory", async () => {
+  const asks = ["rm *.config", "rm *.config/*", "rm *.local", "rm *.local/*"]
+    .map(resource => ({ action: "shell", resource, effect: "ask" }));
+  for (const name of ["build", "general"])
+    assert.deepEqual(config.agents[name].permissions.slice(-asks.length), asks, `${name} ends with the state-deletion asks`);
+  const instructions = await readFile(new URL("../AGENTS.md", import.meta.url), "utf8");
+  assert.match(instructions, /Never delete, move, or reset `\/data\/\.config` or `\/data\/\.local`/);
 });
 
 test("runtime conversion preserves JSONC overrides and rejects malformed input", async () => {
