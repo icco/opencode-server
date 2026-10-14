@@ -72,7 +72,7 @@ Grafana and Karakeep can connect before their credentials are validated; check a
 
 ## Agents and configuration
 
-- **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Build and General ask before `rm` commands that name a `.config` or `.local` path. Tool permissions do not sandbox shell access.
+- **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Build and General ask before any `rm` command whose text contains `.config` or `.local`. Tool permissions do not sandbox shell access.
 - [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr` and `go-repo`](skills/). [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
 - [OpenCode Quota](https://github.com/slkiser/opencode-quota) provides `/quota` and `/quota_status`.
 - Defaults and pinned plugins live in [`opencode.jsonc`](opencode.jsonc). The image converts it to `/etc/opencode/opencode.json`; project `opencode.json(c)` files can override settings. See the [V2 configuration guide](https://opencode.ai/v2/docs/config).

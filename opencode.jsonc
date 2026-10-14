@@ -14,10 +14,8 @@
     "build": {
       "permissions": [
         { "action": "*", "resource": "*", "effect": "allow" },
-        { "action": "shell", "resource": "rm *.config", "effect": "ask" },
-        { "action": "shell", "resource": "rm *.config/*", "effect": "ask" },
-        { "action": "shell", "resource": "rm *.local", "effect": "ask" },
-        { "action": "shell", "resource": "rm *.local/*", "effect": "ask" }
+        { "action": "shell", "resource": "rm *.config*", "effect": "ask" },
+        { "action": "shell", "resource": "rm *.local*", "effect": "ask" }
       ]
     },
     "general": {
@@ -31,10 +29,8 @@
         { "action": "skill", "resource": "*", "effect": "allow" },
         { "action": "execute", "resource": "*", "effect": "allow" },
         { "action": "context7_*", "resource": "*", "effect": "allow" },
-        { "action": "shell", "resource": "rm *.config", "effect": "ask" },
-        { "action": "shell", "resource": "rm *.config/*", "effect": "ask" },
-        { "action": "shell", "resource": "rm *.local", "effect": "ask" },
-        { "action": "shell", "resource": "rm *.local/*", "effect": "ask" }
+        { "action": "shell", "resource": "rm *.config*", "effect": "ask" },
+        { "action": "shell", "resource": "rm *.local*", "effect": "ask" }
       ]
     },
     "explore": {
