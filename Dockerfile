@@ -63,6 +63,7 @@ ENV HOME=/data \
     XDG_CACHE_HOME=/data/.cache \
     OPENCODE_CONFIG=/etc/opencode/opencode.json \
     OPENCODE_CLIENT=app \
+    OPENCHAMBER_CHATS_DIR=/data/workspace/.chats \
     SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json

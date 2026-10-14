@@ -19,6 +19,11 @@ if [ "${1:-}" = openchamber ] && [ "${#ui_password}" -lt 32 ]; then
   exit 1
 fi
 
+if ! mountpoint -q "$HOME"; then
+  echo "$HOME must be a volume or bind mount; sessions, credentials, and logs written to the container layer are lost when it is recreated" >&2
+  exit 1
+fi
+
 mkdir -p "$XDG_CONFIG_HOME/opencode" "$XDG_CONFIG_HOME/gh" "$XDG_DATA_HOME/opencode" \
   "$XDG_STATE_HOME/opencode" "$XDG_CACHE_HOME/opencode" "$HOME/workspace/.worktrees"
 

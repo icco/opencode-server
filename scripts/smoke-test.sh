@@ -47,33 +47,42 @@ test "$status" = 1
 status=0
 timeout 15 docker run --rm -e OPENCODE_PASSWORD=short "$image" || status=$?
 test "$status" = 1
+# Startup must also fail without a volume at /data.
+status=0
+timeout 15 docker run --rm -e "OPENCODE_PASSWORD=$password" "$image" || status=$?
+test "$status" = 1
 
-docker run -d --name "$name" \
-  --cap-drop ALL --security-opt no-new-privileges:true \
-  --pids-limit 2048 --memory 4g --cpus 2 \
-  -p 127.0.0.1::4096 \
-  -e "OPENCODE_PASSWORD=$password" \
-  -e LUNCHMONEY_API_TOKEN=catalog-test-only \
-  -e KARAKEEP_API_ADDR=http://127.0.0.1:1 \
-  -e KARAKEEP_API_KEY=catalog-test-only \
-  "$image"
+volume="opencode-test-data-$$"
+start_opencode() {
+  docker run -d --name "$name" \
+    --cap-drop ALL --security-opt no-new-privileges:true \
+    --pids-limit 2048 --memory 4g --cpus 2 \
+    -p 127.0.0.1::4096 \
+    -v "$volume:/data" \
+    -e "OPENCODE_PASSWORD=$password" \
+    -e LUNCHMONEY_API_TOKEN=catalog-test-only \
+    -e KARAKEEP_API_ADDR=http://127.0.0.1:1 \
+    -e KARAKEEP_API_KEY=catalog-test-only \
+    "$image"
+  url="http://127.0.0.1:$(docker port "$name" 4096/tcp | cut -d: -f2)"
+  for attempt in $(seq 1 60); do
+    if docker exec "$name" /usr/local/bin/healthcheck.sh; then
+      break
+    fi
+    printf 'Waiting for OpenCode (%s/60)\n' "$attempt"
+    sleep 3
+  done
+  docker exec "$name" /usr/local/bin/healthcheck.sh
+}
 cleanup() {
-  docker logs "$name"
+  docker logs "$name" || true
   docker exec "$name" sh -c 'for log in "$XDG_DATA_HOME"/opencode/log/*.log; do [ ! -f "$log" ] || cat "$log"; done' || true
-  docker rm -f "$name"
+  docker rm -f "$name" || true
+  docker volume rm "$volume" || true
 }
 trap cleanup EXIT
-port=$(docker port "$name" 4096/tcp | cut -d: -f2)
-url="http://127.0.0.1:$port"
+start_opencode
 
-for attempt in $(seq 1 60); do
-  if docker exec "$name" /usr/local/bin/healthcheck.sh; then
-    break
-  fi
-  printf 'Waiting for OpenCode (%s/60)\n' "$attempt"
-  sleep 3
-done
-docker exec "$name" /usr/local/bin/healthcheck.sh
 for path in /api/info /api/integration; do
   test "$(curl -s -o /dev/null -w '%{http_code}' "$url$path")" = 401
   test "$(curl -s -o /dev/null -w '%{http_code}' --user opencode:wrong-password "$url$path")" = 401
@@ -97,6 +106,23 @@ docker exec "$name" sh -ec '
   cmp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 '
 
+# Sessions, logs, config, and state must survive recreating the container on the same volume.
+location='location%5Bdirectory%5D=/data/workspace'
+session=$(curl --fail -s --user "opencode:$password" -H 'Content-Type: application/json' \
+  -d '{"title":"Persistence check","agent":"build","location":{"directory":"/data/workspace"}}' \
+  "$url/api/session?$location" | jq -er '.data.id')
+docker exec "$name" sh -ec 'touch "$XDG_CONFIG_HOME/gh/persist-check" "$XDG_STATE_HOME/opencode/persist-check"'
+docker rm -f "$name"
+start_opencode
+curl --fail -s --user "opencode:$password" "$url/api/session/$session?$location" |
+  jq -e --arg id "$session" '.data.id == $id' >/dev/null
+docker exec "$name" sh -ec '
+  test -f "$XDG_CONFIG_HOME/gh/persist-check"
+  test -f "$XDG_STATE_HOME/opencode/persist-check"
+  starts=$(grep "message=\"cli starting\"" "$XDG_DATA_HOME/opencode/log/opencode.log" | grep -c -e --hostname)
+  test "$starts" -ge 2
+'
+
 # OpenChamber must refuse to start without a strong UI password.
 for ui in "" short " a                                    "; do
   status=0
@@ -113,6 +139,7 @@ docker network connect --alias opencode "$network" "$name"
 docker run -d --name "$chamber" --network "$network" \
   --cap-drop ALL --security-opt no-new-privileges:true \
   -p 127.0.0.1::3000 \
+  -v "$volume:/data" \
   -e OPENCODE_HOST=http://opencode:4096 \
   -e OPENCODE_SKIP_START=true \
   -e "OPENCODE_PASSWORD=$password" \
@@ -132,6 +159,7 @@ for attempt in $(seq 1 40); do
   sleep 3
 done
 docker exec "$chamber" /usr/local/bin/openchamber-healthcheck.sh
+docker exec "$chamber" test -d /data/workspace/.chats
 
 test "$(curl -s -o /dev/null -w '%{http_code}' "$chamber_url/api/session")" = 401
 test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' \
