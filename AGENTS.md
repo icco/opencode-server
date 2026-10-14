@@ -7,6 +7,7 @@
 - Before editing, inspect the canonical checkout and create a task branch with `git worktree add`. Move the OpenCode session to the worktree and run edits, tests, commits, and pushes there.
 - Keep uncommitted user changes untouched. Do not delete worktrees with uncommitted work or remove another session's worktree.
 - For research-only tasks, reading the canonical checkout is fine. For non-Git directories, ask before initializing a repository.
+- Never delete, move, or reset `/data/.config` or `/data/.local`. They hold the OpenCode database, logs, credentials, and OpenChamber settings for every session.
 
 ## Workflow
 

@@ -15,7 +15,18 @@ docker compose up -d
 
 Open <http://localhost:3000> and sign in with `OPENCHAMBER_UI_PASSWORD`. Keep both passwords in your deployment's secret store and export them for later Compose commands; startup requires at least 32 characters for each. OpenCode has no host port; only OpenChamber reaches it, over the Compose network.
 
-The `/data` volume preserves repositories, sessions, credentials, and caches. Keep repositories in `/data/workspace` and back up the volume. Bind mounts must be writable by UID/GID 1000. Compose also mounts the host's `~/.ssh` read-only; keys must be readable by UID 1000, and `known_hosts` must be maintained on the host.
+All state lives in the `/data` volume, and startup exits if `/data` is not a volume or bind mount. Bind mounts must be writable by UID/GID 1000. Compose also mounts the host's `~/.ssh` read-only; keys must be readable by UID 1000, and `known_hosts` must be maintained on the host.
+
+| Path under `/data` | Contents |
+| --- | --- |
+| `.local/share/opencode/opencode.db` | Sessions and provider credentials |
+| `.local/share/opencode/log/opencode.log` | OpenCode server log |
+| `.local/state/opencode` | Service registration and locks |
+| `.config/opencode`, `.config/gh` | Global `AGENTS.md` (replaced on each start), GitHub CLI login |
+| `.config/openchamber` | OpenChamber settings, passkeys, and login secret |
+| `workspace` | Repositories, worktrees, and OpenChamber chats in `workspace/.chats` |
+
+Back up the whole volume. To restore, stop both containers, replace the volume contents, and start them again. The servers keep files open or cached in memory, so deleting one from a running volume takes effect at the next restart.
 
 To update the image or apply changed environment variables:
 
@@ -61,7 +72,7 @@ Grafana and Karakeep can connect before their credentials are validated; check a
 
 ## Agents and configuration
 
-- **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Tool permissions do not sandbox shell access.
+- **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Build and General ask before `rm` commands whose text contains `.config`, `.local`, `HOME`, `~`, or `/data/.`, or ends in `/data`. Tool permissions do not sandbox shell access.
 - [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr` and `go-repo`](skills/). [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
 - [OpenCode Quota](https://github.com/slkiser/opencode-quota) provides `/quota` and `/quota_status`.
 - Defaults and pinned plugins live in [`opencode.jsonc`](opencode.jsonc). The image converts it to `/etc/opencode/opencode.json`; project `opencode.json(c)` files can override settings. See the [V2 configuration guide](https://opencode.ai/v2/docs/config).
