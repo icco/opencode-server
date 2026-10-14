@@ -48,7 +48,7 @@ test("existing providers, MCP integrations and quota are preserved", () => {
 });
 
 test("agents ask before deleting server state under the home directory", async () => {
-  const asks = ["rm *.config*", "rm *.local*", "rm *HOME*", "rm *~*", "rm */data", "rm */data/"]
+  const asks = ["rm *.config*", "rm *.local*", "rm *HOME*", "rm *~*", "rm */data", "rm */data/", "rm */data/.*"]
     .map(resource => ({ action: "shell", resource, effect: "ask" }));
   for (const name of ["build", "general"])
     assert.deepEqual(config.agents[name].permissions.slice(-asks.length), asks, `${name} ends with the state-deletion asks`);

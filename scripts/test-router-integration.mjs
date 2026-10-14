@@ -111,7 +111,7 @@ try {
     assert.equal(permission(general, action), "allow", `general can implement and test with ${action}`);
   for (const agent of [lead, general]) {
     assert.equal(permission(agent, "shell", "rm -rf node_modules"), "allow", `${agent.id} can delete project files`);
-    for (const command of ["rm -rf ~/.config", 'rm -rf "$HOME/.local/share/opencode"', 'rm -rf "$XDG_CONFIG_HOME"', "rm -rf .config .local .cache", "rm -rf ~", "rm -rf /data", "rm -rf /data/"])
+    for (const command of ["rm -rf ~/.config", 'rm -rf "$HOME/.local/share/opencode"', 'rm -rf "$XDG_CONFIG_HOME"', "rm -rf .config .local .cache", "rm -rf ~", "rm -rf /data", "rm -rf /data/", "rm -rf /data/.*"])
       assert.equal(permission(agent, "shell", command), "ask", `${agent.id} asks before ${command}`);
   }
   const skills = (await request("/api/skill")).data;

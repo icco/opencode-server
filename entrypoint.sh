@@ -19,8 +19,8 @@ if [ "${1:-}" = openchamber ] && [ "${#ui_password}" -lt 32 ]; then
   exit 1
 fi
 
-if ! mountpoint -q "$HOME"; then
-  echo "$HOME must be a volume or bind mount; sessions, credentials, and logs written to the container layer are lost when it is recreated" >&2
+if ! mountpoint -q /data; then
+  echo "/data must be a volume or bind mount; sessions, credentials, and logs written to the container layer are lost when it is recreated" >&2
   exit 1
 fi
 
