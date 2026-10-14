@@ -128,23 +128,21 @@
     "superpowers@git+https://github.com/obra/superpowers.git#bb92a77741419a4ab5f06e711a283343f1ada0c3",
     "@slkiser/opencode-quota@5.0.2"
   ],
-  "experimental": {
-    "policies": [
-      {
-        "action": "provider.use",
-        "resource": "*",
-        "effect": "deny"
-      },
-      {
-        "action": "provider.use",
-        "resource": "google",
-        "effect": "allow"
-      },
-      {
-        "action": "provider.use",
-        "resource": "github-copilot",
-        "effect": "allow"
-      }
-    ]
-  }
+  "policies": [
+    {
+      "action": "provider.use",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      "action": "provider.use",
+      "resource": "google",
+      "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "github-copilot",
+      "effect": "allow"
+    }
+  ]
 }
