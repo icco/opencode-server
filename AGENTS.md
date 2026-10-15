@@ -98,13 +98,13 @@
 
 ## Pull request workflow
 
-- Open draft pull requests early, then commit and push small, verified changes frequently instead of waiting for the whole task to finish.
-- Open a pull request by default for repository code or configuration changes after verification passes; do not stop at uncommitted local edits unless the user explicitly asks otherwise.
+- Open draft pull requests early, then commit and push small changes frequently instead of waiting for the whole task to finish. Push unfinished work too, and note the WIP state in the commit message instead of holding the commit back.
+- Open a pull request by default for repository code or configuration changes; do not stop at uncommitted local edits unless the user explicitly asks otherwise.
 - Load the `commit-push-pr` skill when committing, pushing, or opening a pull request.
 
 ## Pull request descriptions
 
-- Before creating or editing a PR, read and follow its repository's PR template. Check the repository owner's `.github` repository for an inherited template when there is no repository-local template. Never assume no local file means no template exists.
+- Before creating or editing a PR, read and follow its repository's PR template. Check the repository owner's `.github` repository for an inherited template when there is no repository-local template. Never assume no local file means no template exists. With no template anywhere, write a short summary and a few bullets, with no section headers on a small PR.
 - Use exactly the template's sections and keep each concise. Do not add Summary, Validation, Test Plan, Deployment, or other assistant-generated sections. Put essential rollout caveats under the risks section and leave detailed setup instructions in repository documentation.
 - Check off a template's fixed checklist items; never add new ones. Write "No Risks Found" rather than dropping a risks section.
 - Keep bodies to six lines of content or fewer, excluding template headers. Lead with one sentence on what the PR does, then what to look at, then risks and deferred work. Write for the reviewer: no narrative of the work, no bugs found along the way, no test-plan checklist.
