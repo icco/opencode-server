@@ -49,6 +49,8 @@ try {
     await mkdir(join(home, "config/opencode"), { recursive: true });
     await writeFile(join(home, "runtime.json"), JSON.stringify({ ...await buildConfig(), skills: [join(root, "skills")] }));
     await copyFile(join(root, "AGENTS.md"), join(home, "config/opencode/AGENTS.md"));
+    await mkdir(join(home, "config/opencode/opencode-quota"), { recursive: true });
+    await copyFile(join(root, "config/quota-toast.jsonc"), join(home, "config/opencode/opencode-quota/quota-toast.jsonc"));
     // Keep the host's config, database overrides, and credentials out of this server.
     const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
       !/^(OPENCODE_|ORCHESTRA_|WAKATIME_|GRAFANA_|LUNCHMONEY_|KARAKEEP_|GOOGLE_|GIT_CONFIG_|GH_|GITHUB_)|API_KEY|TOKEN/.test(key)));
@@ -77,6 +79,7 @@ try {
     assert.ok(packages.some(p => p.id === "superpowers"));
     assert.ok(!data.some(p => p.id === "opencode-orchestra"));
     assert.ok(packages.some(p => p.id === "@slkiser/opencode-quota.server"), JSON.stringify(packages));
+    assert.ok(packages.some(p => p.id.includes("fallback")), JSON.stringify(packages));
     return true;
   });
   const commands = (await request("/api/command")).data;
@@ -147,6 +150,12 @@ try {
     const report = item.payload.metadata?.opencodeQuota;
     return report?.command === "quota_announcements" && report.document?.sections?.length;
   }), `quota command produced a report: ${JSON.stringify(inbox)}`);
+  await request(`/api/session/${session.id}/command`, { name: "quota_status", text: "" });
+  const status = (await request(`/api/session/${session.id}/inbox`)).data
+    .map(item => item.payload.metadata?.opencodeQuota).find(report => report?.command === "quota_status");
+  assert.ok(!JSON.stringify(status).includes("quotaProviders["), `quota config is valid: ${JSON.stringify(status)}`);
+  for (const id of ["anthropic-api", "openai-api", "google-api"])
+    assert.ok(JSON.stringify(status).includes(id), `quota_status lists ${id}: ${JSON.stringify(status)}`);
   await request(`/api/experimental/session/${session.id}/wait`, undefined, "POST");
   const context = (await request(`/api/session/${session.id}/message`)).data;
   assert.ok(!context.some(m => m.type === "assistant"), "no model inference");

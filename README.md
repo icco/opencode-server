@@ -21,7 +21,7 @@ All state lives in the `/data` volume, and startup exits if `/data` is not a vol
 | --- | --- |
 | `.local/share/opencode/opencode.db` | Sessions and provider credentials |
 | `.local/share/opencode/log/opencode.log` | OpenCode server log |
-| `.local/state/opencode` | Service registration and locks |
+| `.local/state/opencode` | Service registration, locks, and quota budget counters |
 | `.config/opencode`, `.config/gh` | Global `AGENTS.md` (replaced on each start), GitHub CLI login |
 | `.config/openchamber` | OpenChamber settings, passkeys, and login secret |
 | `workspace` | Repositories, worktrees, and OpenChamber chats in `workspace/.chats` |
@@ -52,6 +52,12 @@ docker compose exec opencode opencode auth login openai --server http://127.0.0.
 - **OpenAI:** choose the API-key method with a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
 - **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`. This is separate from Copilot login; stored credentials persist in `/data/.config/gh`.
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
+
+## Budgets and fallback
+
+Build and compaction default to `anthropic/claude-opus-5-5`. When a provider rejects a request for quota, rate limit, or availability, [opencode-runtime-fallback](https://github.com/youngbinkim0/opencode-fallback) continues the session on OpenAI, then Google, then Copilot, and retries the failed provider after an hour. Set a $50 monthly spend limit in each provider console; that limit is what stops spending.
+
+`/quota` shows Copilot plus a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
 
 ## MCP integrations
 
