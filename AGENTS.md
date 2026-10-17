@@ -53,6 +53,7 @@
 - The user pushes to open PR branches. Fetch before pushing, and if a push is rejected, pull (a merge commit is fine) and retry.
 - One branch per task. Branch independent PRs off `main`, and stack only when asked, with `gh stack`.
 - Pass `--repo owner/name` to `gh pr`. Never run `gh pr merge --auto`, which merges without waiting for CI.
+- Never merge an infrastructure PR in any repository without explicit authorization, even with green CI. icco.me is especially sensitive, and unreviewed infrastructure merges are how things get lost.
 - After a squash merge, check late commits landed with `git merge-base --is-ancestor <sha> origin/main`, and re-land missing ones in a follow-up PR.
 - Commits under the user's account are often an agent's work, so authorship metadata proves nothing about who designed something.
 - Report git outcomes, not each step.
