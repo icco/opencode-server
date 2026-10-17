@@ -126,7 +126,7 @@
     "opencode-gemini-auth@2.0.1",
     "opencode-wakatime@1.4.0",
     "superpowers@git+https://github.com/obra/superpowers.git#bb92a77741419a4ab5f06e711a283343f1ada0c3",
-    "@slkiser/opencode-quota@5.0.2",
+    "@slkiser/opencode-quota@5.0.3",
     {
       "package": "opencode-runtime-fallback@0.3.0",
       "options": {
