@@ -143,6 +143,16 @@
       "action": "provider.use",
       "resource": "github-copilot",
       "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "anthropic",
+      "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "openai",
+      "effect": "allow"
     }
   ]
 }

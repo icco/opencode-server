@@ -86,6 +86,10 @@ try {
   assert.ok(google.methods.some(m => m.type === "oauth" && m.id === "gemini-cli"));
   const copilot = (await request("/api/integration/github-copilot")).data;
   assert.ok(copilot.methods.some(m => m.type === "oauth"));
+  for (const provider of ["anthropic", "openai"]) {
+    const { methods } = (await request(`/api/integration/${provider}`)).data;
+    assert.ok(methods.some(m => m.type === "key"), `${provider} accepts an API key: ${JSON.stringify(methods)}`);
+  }
   const agents = (await request("/api/agent")).data;
   const lead = agents.find(a => a.id === "build");
   assert.ok(lead, "native build agent is available");
@@ -134,7 +138,7 @@ try {
   });
   // Without credentials, a dropped provider policy shows up as OpenCode's free models.
   const models = (await request("/api/model")).data;
-  assert.ok(models.every(m => ["google", "github-copilot"].includes(m.providerID)), `policies hide other providers' models: ${models.map(m => m.providerID)}`);
+  assert.ok(models.every(m => ["google", "github-copilot", "anthropic", "openai"].includes(m.providerID)), `policies hide other providers' models: ${models.map(m => m.providerID)}`);
   session = (await request("/api/session", { title: "V2 integration test", agent: "build",
     location: { directory } })).data;
   await request(`/api/session/${session.id}/command`, { name: "quota_announcements", text: "" });
