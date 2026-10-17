@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 import { Config } from "@opencode/schema/config";
+import { parse } from "jsonc-parser";
 import { buildConfig, readConfig } from "../scripts/build-config.mjs";
 
 // Decode schemas with their own Effect runtime, not an independently updated one.
@@ -15,13 +16,13 @@ const config = await readConfig();
 test("configuration validates strictly against the installed V2 schema", () => {
   const parsed = Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(config);
   assert.equal(parsed.default_agent, "build");
-  assert.equal(parsed.model.providerID, "github-copilot");
+  assert.equal(parsed.model.providerID, "anthropic");
   assert.equal(config.worktree.directory, "/data/workspace/.worktrees");
 });
 
 test("Superpowers is immutable-pinned and replaces Orchestra", async () => {
   assert.ok(config.plugins.some(p => /^superpowers@git\+https:\/\/github.com\/obra\/superpowers.git#[a-f0-9]{40}$/.test(p)));
-  assert.ok(!config.plugins.some(p => p.includes("orchestra")));
+  assert.ok(!config.plugins.some(p => (p.package ?? p).includes("orchestra")));
   assert.ok(!Object.keys(config.agents).some(p => p.startsWith("orch-")));
   assert.deepEqual(await buildConfig(), config);
   const instructions = await readFile(new URL("../AGENTS.md", import.meta.url), "utf8");
@@ -47,6 +48,15 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
+});
+
+test("paid providers fall back to Copilot and show $50 budgets", async () => {
+  const fallback = config.plugins.find(p => p.package?.startsWith("opencode-runtime-fallback@"));
+  assert.match(fallback.package, /@\d+\.\d+\.\d+$/);
+  assert.deepEqual(fallback.options.fallback_models.map(m => m.split("/")[0]), ["openai", "google", "github-copilot"]);
+  const quota = parse(await readFile(new URL("../config/quota-toast.jsonc", import.meta.url), "utf8"));
+  assert.deepEqual(quota.quotaProviders.map(p => [p.providerId, p.windows[0].usdBudget]), [["anthropic", 50], ["openai", 50], ["google", 50]]);
+  assert.equal(quota.waitForQuotaReset, false);
 });
 
 test("agents ask before deleting server state under the home directory", async () => {

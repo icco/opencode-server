@@ -4,6 +4,7 @@
 !healthcheck.sh
 !openchamber-healthcheck.sh
 !AGENTS.md
+!config/
 !skills/
 !opencode.jsonc
 !orchestra.jsonc
