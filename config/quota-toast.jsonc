@@ -7,21 +7,21 @@
       "providerId": "anthropic",
       "label": "Anthropic",
       "mode": "local-estimate",
-      "windows": [{ "id": "30d", "label": "30 days", "type": "rolling", "durationMinutes": 43200, "requestLimit": 1000000, "usdBudget": 50 }]
+      "windows": [{ "id": "rolling-30-days", "label": "30 days", "type": "rolling", "durationMinutes": 43200, "requestLimit": 1000000, "usdBudget": 50 }]
     },
     {
       "id": "openai-api",
       "providerId": "openai",
       "label": "OpenAI",
       "mode": "local-estimate",
-      "windows": [{ "id": "30d", "label": "30 days", "type": "rolling", "durationMinutes": 43200, "requestLimit": 1000000, "usdBudget": 50 }]
+      "windows": [{ "id": "rolling-30-days", "label": "30 days", "type": "rolling", "durationMinutes": 43200, "requestLimit": 1000000, "usdBudget": 50 }]
     },
     {
       "id": "google-api",
       "providerId": "google",
       "label": "Google",
       "mode": "local-estimate",
-      "windows": [{ "id": "30d", "label": "30 days", "type": "rolling", "durationMinutes": 43200, "requestLimit": 1000000, "usdBudget": 50 }]
+      "windows": [{ "id": "rolling-30-days", "label": "30 days", "type": "rolling", "durationMinutes": 43200, "requestLimit": 1000000, "usdBudget": 50 }]
     }
   ]
 }

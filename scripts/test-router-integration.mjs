@@ -153,6 +153,7 @@ try {
   await request(`/api/session/${session.id}/command`, { name: "quota_status", text: "" });
   const status = (await request(`/api/session/${session.id}/inbox`)).data
     .map(item => item.payload.metadata?.opencodeQuota).find(report => report?.command === "quota_status");
+  assert.ok(!JSON.stringify(status).includes("quotaProviders["), `quota config is valid: ${JSON.stringify(status)}`);
   for (const id of ["anthropic-api", "openai-api", "google-api"])
     assert.ok(JSON.stringify(status).includes(id), `quota_status lists ${id}: ${JSON.stringify(status)}`);
   await request(`/api/experimental/session/${session.id}/wait`, undefined, "POST");
