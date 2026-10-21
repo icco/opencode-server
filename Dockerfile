@@ -26,6 +26,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    NODE_OPTIONS="--use-openssl-ca${NODE_OPTIONS:+ $NODE_OPTIONS}"
+
 ARG OPENCODE_VERSION=2.0.32
 ARG OPENCHAMBER_VERSION=2.4.0
 ARG TYPESCRIPT_VERSION=7.0.2
@@ -64,9 +67,7 @@ ENV HOME=/data \
     XDG_CACHE_HOME=/data/.cache \
     OPENCODE_CONFIG=/etc/opencode/opencode.json \
     OPENCODE_CLIENT=app \
-    OPENCHAMBER_CHATS_DIR=/data/workspace/.chats \
-    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
-    NODE_OPTIONS="--use-openssl-ca${NODE_OPTIONS:+ $NODE_OPTIONS}"
+    OPENCHAMBER_CHATS_DIR=/data/workspace/.chats
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY AGENTS.md /etc/opencode/AGENTS.md
