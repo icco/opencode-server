@@ -50,6 +50,7 @@ docker compose exec opencode opencode auth login openai --server http://127.0.0.
 - **Gemini:** choose the API-key method or set `GOOGLE_GENERATIVE_AI_API_KEY`. Organization-backed Code Assist OAuth also needs `OPENCODE_GEMINI_PROJECT_ID`; see the [Gemini plugin's account requirements](https://github.com/jenslys/opencode-gemini-auth).
 - **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`. Claude Pro and Max subscriptions do not work outside Claude Code.
 - **OpenAI:** choose the API-key method with a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
+- **Ollama:** `qwen3-coder:30b` and `ornith:35b` are served from `http://ollama:11434/v1`, so run an [Ollama](https://docs.ollama.com/docker) container named `ollama` on the same Compose network with those models pulled. It needs no key.
 - **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`. This is separate from Copilot login; stored credentials persist in `/data/.config/gh`.
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
 
