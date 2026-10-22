@@ -137,7 +137,11 @@
         ],
         "retryable_error_patterns": [
           "usage limits",
-          "exceeded your current quota"
+          "exceeded your current quota",
+          "credit_balance_exhausted",
+          "no credits remaining",
+          "model\\b.*\\bnot (?:be )?found",
+          "model_not_found"
         ],
         "cooldown_seconds": 3600,
         "timeout_seconds": 120
