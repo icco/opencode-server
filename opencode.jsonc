@@ -80,7 +80,7 @@
         "command": [
           "npx",
           "-y",
-          "@karakeep/mcp@0.33.1"
+          "@karakeep/mcp@0.34.0"
         ],
         "environment": {
           "KARAKEEP_API_ADDR": "{env:KARAKEEP_API_ADDR}",
@@ -125,7 +125,7 @@
   "plugins": [
     "opencode-gemini-auth@2.0.1",
     "opencode-wakatime@1.4.0",
-    "superpowers@git+https://github.com/obra/superpowers.git#bb92a77741419a4ab5f06e711a283343f1ada0c3",
+    "superpowers@git+https://github.com/obra/superpowers.git#2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
     "@slkiser/opencode-quota@5.0.3",
     {
       "package": "opencode-runtime-fallback@0.3.0",
