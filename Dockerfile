@@ -10,7 +10,7 @@ ARG GOLANGCI_LINT_VERSION=v2.14.0
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/go-task/task/v3/cmd/task@${TASK_VERSION}" \
     && CGO_ENABLED=0 GOBIN=/out go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
-FROM node:26.12.0-trixie-slim AS tools
+FROM node:26.12.1-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
@@ -26,8 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
-    NODE_OPTIONS="--use-openssl-ca${NODE_OPTIONS:+ $NODE_OPTIONS}"
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 ARG OPENCODE_VERSION=2.0.32
 ARG OPENCHAMBER_VERSION=2.4.0
