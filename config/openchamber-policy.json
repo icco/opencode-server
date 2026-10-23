@@ -1,3 +1,5 @@
 {
-  "allowedExtensions": ["https://github.com/openchamber/openchamber-resource-monitor"]
+  "allowedExtensions": [
+    "https://github.com/openchamber/openchamber-resource-monitor"
+  ]
 }
