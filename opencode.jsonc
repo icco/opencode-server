@@ -28,6 +28,7 @@
         { "action": "grafana_*", "resource": "*", "effect": "deny" },
         { "action": "lunchmoney_*", "resource": "*", "effect": "deny" },
         { "action": "karakeep_*", "resource": "*", "effect": "deny" },
+        { "action": "gmail_*", "resource": "*", "effect": "deny" },
         { "action": "notion_*", "resource": "*", "effect": "deny" },
         { "action": "robinhood_*", "resource": "*", "effect": "deny" },
         { "action": "subagent", "resource": "*", "effect": "deny" },
@@ -50,6 +51,7 @@
         { "action": "grafana_*", "resource": "*", "effect": "deny" },
         { "action": "lunchmoney_*", "resource": "*", "effect": "deny" },
         { "action": "karakeep_*", "resource": "*", "effect": "deny" },
+        { "action": "gmail_*", "resource": "*", "effect": "deny" },
         { "action": "notion_*", "resource": "*", "effect": "deny" },
         { "action": "robinhood_*", "resource": "*", "effect": "deny" },
         { "action": "subagent", "resource": "*", "effect": "deny" },
@@ -70,6 +72,15 @@
       "notion": {
         "type": "remote",
         "url": "https://mcp.notion.com/mcp"
+      },
+      "gmail": {
+        "type": "remote",
+        "url": "https://gmailmcp.googleapis.com/mcp/v1",
+        "oauth": {
+          "clientId": "{env:GMAIL_MCP_CLIENT_ID}",
+          "clientSecret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "scope": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose"
+        }
       },
       "robinhood": {
         "type": "remote",
