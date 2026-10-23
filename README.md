@@ -68,7 +68,7 @@ Set the variables below before creating the container. For remote servers, open 
 | Integration | Setup |
 | --- | --- |
 | [Context7](https://mcp.context7.com/mcp) | Remote library documentation. |
-| [Gmail](https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server) | Remote server at `https://gmailmcp.googleapis.com/mcp/v1` (Developer Preview). Create a Web application OAuth client with redirect URI `http://127.0.0.1:19876/mcp/oauth/callback` and set `GMAIL_MCP_CLIENT_ID` and `GMAIL_MCP_CLIENT_SECRET`; read and draft only, no send. |
+| [Gmail](https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server) | Remote server at `https://gmailmcp.googleapis.com/mcp/v1` (Developer Preview). Create a Web application OAuth client with redirect URI `http://127.0.0.1:19876/callback` and set `GMAIL_MCP_CLIENT_ID` and `GMAIL_MCP_CLIENT_SECRET`; read and draft only, no send. The callback listener is on the container loopback, so after consent copy the failed `127.0.0.1:19876` URL from the browser and run `docker compose exec opencode curl -fsS "<url>"`. |
 | [Grafana](https://github.com/grafana/mcp-grafana) | `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN`; bundled tools are read-only. |
 | [Karakeep](https://docs.karakeep.app/integrations/mcp) | `KARAKEEP_API_KEY` and `KARAKEEP_API_ADDR` (defaults to `https://hoard.natwelch.com`); includes write tools. |
 | [Lunch Money](https://github.com/akutishevsky/lunchmoney-mcp) | `LUNCHMONEY_API_TOKEN` from [developer settings](https://my.lunchmoney.app/developers); required to start its MCP server. |
