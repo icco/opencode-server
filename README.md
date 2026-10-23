@@ -105,7 +105,7 @@ code.example.com {
 }
 ```
 
-`/health` is unauthenticated and reports diagnostics, so keep it off the internet. OpenChamber runs in [enterprise mode](https://docs.openchamber.dev/security/#enterprise-mode), which disables the relay and untrusted extensions. Login is rate limited; add a passkey under Settings after first sign-in.
+`/health` is unauthenticated and reports diagnostics, so keep it off the internet. OpenChamber runs in [enterprise mode](https://docs.openchamber.dev/security/#enterprise-mode), which disables the relay and untrusted extensions. [Resource Monitor](https://github.com/openchamber/openchamber-resource-monitor) is allowed in `/etc/openchamber/policy.json`; install it once from Settings, Extensions with that URL. Login is rate limited; add a passkey under Settings after first sign-in.
 
 The container runs as UID 1000 with dropped capabilities and resource limits. Login grants code execution and access to stored credentials; this is a trusted-user service, not a multi-tenant sandbox.
 
