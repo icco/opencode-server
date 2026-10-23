@@ -32,6 +32,7 @@ ARG OPENCODE_VERSION=2.1.3
 ARG OPENCHAMBER_VERSION=2.5.0
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.15.0
+ARG CLAUDE_CODE_VERSION=2.1.309
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
@@ -42,10 +43,12 @@ RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; e
       "https://registry.npmjs.org/@pnpm/exe.linux-${arch}/-/exe.linux-${arch}-${PNPM_VERSION}.tgz" \
       | tar -xz --strip-components=1 -C /opt/pnpm-cli \
     && ln -s /opt/pnpm-cli/pnpm /usr/local/bin/pnpm \
-    && XDG_CONFIG_HOME=/opt/pnpm-config pnpm --allow-build=@opencode/cli --allow-build=node-pty add --global \
+    && XDG_CONFIG_HOME=/opt/pnpm-config pnpm --allow-build=@opencode/cli --allow-build=node-pty --allow-build=@anthropic-ai/claude-code add --global \
       "@opencode/cli@${OPENCODE_VERSION}" "@openchamber/web@${OPENCHAMBER_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
+      "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     && opencode --version \
-    && openchamber --version
+    && openchamber --version \
+    && claude --version
 
 FROM tools AS config
 WORKDIR /build
@@ -66,11 +69,13 @@ ENV HOME=/data \
     XDG_CACHE_HOME=/data/.cache \
     OPENCODE_CONFIG=/etc/opencode/opencode.json \
     OPENCODE_CLIENT=app \
+    DISABLE_AUTOUPDATER=1 \
     OPENCHAMBER_CHATS_DIR=/data/workspace/.chats
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY config/quota-toast.jsonc /etc/opencode/quota-toast.jsonc
+COPY config/openchamber-policy.json /etc/openchamber/policy.json
 COPY skills /etc/opencode/skills
 COPY --chmod=755 entrypoint.sh healthcheck.sh openchamber-healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
