@@ -52,7 +52,8 @@ RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; e
 
 FROM tools AS config
 WORKDIR /build
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml opencode.jsonc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY config/system.jsonc ./config/system.jsonc
 COPY scripts/build-config.mjs ./scripts/build-config.mjs
 RUN pnpm install --frozen-lockfile --ignore-scripts --no-optional \
     && node scripts/build-config.mjs /build/runtime.json

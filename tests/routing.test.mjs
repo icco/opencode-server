@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
@@ -90,4 +90,6 @@ test("build tooling and schema versions stay aligned", async () => {
     assert.equal(pkg.devDependencies[name], version, `${name} must match the server`);
   assert.ok(!pkg.devDependencies["@oeronteros-1/opencode-orchestra"]);
   assert.equal(dockerfile.match(/^ARG PNPM_VERSION=(.+)$/m)[1], pkg.packageManager.split("@")[1]);
+  await assert.rejects(stat(new URL("../opencode.jsonc", import.meta.url)));
+  await assert.rejects(stat(new URL("../opencode.json", import.meta.url)));
 });
