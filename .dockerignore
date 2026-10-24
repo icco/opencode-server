@@ -6,7 +6,6 @@
 !AGENTS.md
 !config/
 !skills/
-!opencode.jsonc
 !orchestra.jsonc
 !package.json
 !pnpm-lock.yaml
