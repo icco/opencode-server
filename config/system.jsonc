@@ -21,6 +21,7 @@
   "compaction": {
     "buffer": 10000
   },
+  "warming": true,
   "agents": {
     "build": {
       "permissions": [
