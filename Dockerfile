@@ -75,6 +75,8 @@ COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY config/quota-toast.jsonc /etc/opencode/quota-toast.jsonc
 COPY config/openchamber-policy.json /etc/openchamber/policy.json
 COPY skills /etc/opencode/skills
+RUN npm ci --prefix /etc/opencode/skills/observability-graph/scripts --omit=dev --ignore-scripts --no-audit --no-fund \
+    && npm cache clean --force
 COPY --chmod=755 entrypoint.sh healthcheck.sh openchamber-healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
