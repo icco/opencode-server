@@ -3,6 +3,17 @@
   "update": "disable",
   "model": "anthropic/claude-opus-5-5",
   "default_agent": "build",
+  "providers": {
+    "openai": {
+      "models": {
+        "fast-agent": {
+          "name": "Fast Agent",
+          "capabilities": { "tools": true },
+          "limit": { "context": 1048576, "output": 8192 }
+        }
+      }
+    }
+  },
   "shell": "/usr/bin/zsh",
   "worktree": {
     "directory": "/data/workspace/.worktrees"
@@ -24,6 +35,7 @@
       ]
     },
     "general": {
+      "model": "openai/fast-agent",
       "permissions": [
         { "action": "grafana_*", "resource": "*", "effect": "deny" },
         { "action": "lunchmoney_*", "resource": "*", "effect": "deny" },
@@ -45,6 +57,7 @@
       ]
     },
     "explore": {
+      "model": "openai/fast-agent",
       "permissions": [
         { "action": "shell", "resource": "*", "effect": "deny" },
         { "action": "edit", "resource": "*", "effect": "deny" },
@@ -61,10 +74,10 @@
       ]
     },
     "title": {
-      "model": "google/gemini-2.5-flash-lite"
+      "model": "openai/fast-agent"
     },
     "compaction": {
-      "model": "anthropic/claude-opus-5-5"
+      "model": "openai/fast-agent"
     }
   },
   "mcp": {
