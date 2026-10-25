@@ -1,5 +1,5 @@
 {
-  "enabledProviders": ["copilot", "quota-providers"],
+  "enabledProviders": ["quota-providers"],
   "waitForQuotaReset": false,
   "quotaProviders": [
     {

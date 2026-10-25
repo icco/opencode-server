@@ -61,7 +61,7 @@
       ]
     },
     "title": {
-      "model": "github-copilot/gpt-5.4-mini"
+      "model": "google/gemini-2.5-flash-lite"
     },
     "compaction": {
       "model": "anthropic/claude-opus-5-5"
@@ -135,18 +135,15 @@
     "/etc/opencode/skills"
   ],
   "plugins": [
-    "opencode-gemini-auth@2.0.1",
     "opencode-wakatime@1.4.0",
     "superpowers@git+https://github.com/obra/superpowers.git#2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
     "@slkiser/opencode-quota@5.0.3",
-    "@openchamber/opencode-claude@1.5.0",
     {
       "package": "opencode-runtime-fallback@0.3.0",
       "options": {
         "fallback_models": [
           "openai/gpt-6-astra",
-          "google/gemini-4-argon",
-          "github-copilot/gpt-6-astra"
+          "google/gemini-4-argon"
         ],
         "retryable_error_patterns": [
           "usage limits",
@@ -174,22 +171,12 @@
     },
     {
       "action": "provider.use",
-      "resource": "github-copilot",
-      "effect": "allow"
-    },
-    {
-      "action": "provider.use",
       "resource": "anthropic",
       "effect": "allow"
     },
     {
       "action": "provider.use",
       "resource": "openai",
-      "effect": "allow"
-    },
-    {
-      "action": "provider.use",
-      "resource": "claude-code",
       "effect": "allow"
     }
   ]
