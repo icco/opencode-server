@@ -43,17 +43,17 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "gmail", "grafana", "karakeep", "lunchmoney", "notion", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.3"));
   const allowed = config.policies.filter(p => p.action === "provider.use" && p.effect === "allow").map(p => p.resource);
-  assert.deepEqual(allowed.sort(), ["anthropic", "claude-code", "github-copilot", "google", "openai"]);
+  assert.deepEqual(allowed.sort(), ["anthropic", "google", "openai"]);
   assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
   assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
 });
 
-test("paid providers fall back to Copilot and show $50 budgets", async () => {
+test("paid providers fall back across OpenAI and Google and show $50 budgets", async () => {
   const fallback = config.plugins.find(p => p.package?.startsWith("opencode-runtime-fallback@"));
   assert.match(fallback.package, /@\d+\.\d+\.\d+$/);
-  assert.deepEqual(fallback.options.fallback_models.map(m => m.split("/")[0]), ["openai", "google", "github-copilot"]);
+  assert.deepEqual(fallback.options.fallback_models.map(m => m.split("/")[0]), ["openai", "google"]);
   const quota = parse(await readFile(new URL("../config/quota-toast.jsonc", import.meta.url), "utf8"));
   assert.deepEqual(quota.quotaProviders.map(p => [p.providerId, p.windows[0].usdBudget]), [["anthropic", 50], ["openai", 50], ["google", 50]]);
   assert.equal(quota.waitForQuotaReset, false);

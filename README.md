@@ -40,26 +40,22 @@ docker compose up -d --force-recreate
 Connect providers in OpenCode or run:
 
 ```sh
-docker compose exec opencode opencode auth login github-copilot --server http://127.0.0.1:4096
-docker compose exec opencode opencode auth login google --server http://127.0.0.1:4096
+docker compose exec opencode opencode auth login google --method key --server http://127.0.0.1:4096
 docker compose exec opencode opencode auth login anthropic --method key --server http://127.0.0.1:4096
-docker compose exec opencode opencode auth login openai --server http://127.0.0.1:4096
-docker compose exec opencode claude auth login --claudeai
+docker compose exec opencode opencode auth login openai --method key --server http://127.0.0.1:4096
 ```
 
-- **GitHub Copilot:** complete device login with a subscribed account.
-- **Gemini:** choose the API-key method or set `GOOGLE_GENERATIVE_AI_API_KEY`. Organization-backed Code Assist OAuth also needs `OPENCODE_GEMINI_PROJECT_ID`; see the [Gemini plugin's account requirements](https://github.com/jenslys/opencode-gemini-auth).
-- **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`. For a Claude Pro or Max plan, use the Claude Code provider below instead.
-- **OpenAI:** choose the API-key method with a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
-- **Claude Code:** sign in with `claude auth login --claudeai` to use a Claude Pro or Max plan through [opencode-claude](https://github.com/openchamber/opencode-claude); the login persists in `/data/.claude`. Plan usage only, not Console API keys.
-- **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`. This is separate from Copilot login; stored credentials persist in `/data/.config/gh`.
+- **Gemini:** enter a key or set `GOOGLE_GENERATIVE_AI_API_KEY`.
+- **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`.
+- **OpenAI:** enter a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
+- **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`.
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
 
 ## Budgets and fallback
 
-Build and compaction default to `anthropic/claude-opus-5-5`. When a provider rejects a request for quota, rate limit, or availability, [opencode-runtime-fallback](https://github.com/youngbinkim0/opencode-fallback) continues the session on OpenAI, then Google, then Copilot, and retries the failed provider after an hour. Set a $50 monthly spend limit in each provider console; that limit is what stops spending.
+Build and compaction default to `anthropic/claude-opus-5-5`. When a provider rejects a request for quota, rate limit, or availability, [opencode-runtime-fallback](https://github.com/youngbinkim0/opencode-fallback) continues the session on OpenAI, then Google, and retries the failed provider after an hour. Set a $50 monthly spend limit in each provider console; that limit is what stops spending.
 
-`/quota` shows Copilot plus a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
+`/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
 
 ## MCP integrations
 
