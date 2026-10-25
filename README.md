@@ -53,7 +53,7 @@ docker compose exec opencode opencode auth login openai --method key --server ht
 
 ## Budgets and fallback
 
-Build and compaction default to `anthropic/claude-opus-5-5`. When a provider rejects a request for quota, rate limit, or availability, [opencode-runtime-fallback](https://github.com/youngbinkim0/opencode-fallback) continues the session on OpenAI, then Google, and retries the failed provider after an hour. Set a $50 monthly spend limit in each provider console; that limit is what stops spending.
+Build defaults to `anthropic/claude-opus-5-5`. The general, explore, title, and compaction agents use `openai/fast-agent`, a [LiteLLM](https://docs.litellm.ai/) model group, so they need the `openai` provider's `baseURL` pointed at a LiteLLM proxy that defines it. When a provider rejects a request for quota, rate limit, or availability, [opencode-runtime-fallback](https://github.com/youngbinkim0/opencode-fallback) continues the session on OpenAI, then Google, and retries the failed provider after an hour. Set a $50 monthly spend limit in each provider console; that limit is what stops spending.
 
 `/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
 
