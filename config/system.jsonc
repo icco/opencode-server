@@ -151,26 +151,7 @@
   "plugins": [
     "opencode-wakatime@1.4.0",
     "superpowers@git+https://github.com/obra/superpowers.git#2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
-    "@slkiser/opencode-quota@5.0.3",
-    {
-      "package": "opencode-runtime-fallback@0.3.0",
-      "options": {
-        "fallback_models": [
-          "openai/gpt-6-astra",
-          "google/gemini-4-argon"
-        ],
-        "retryable_error_patterns": [
-          "usage limits",
-          "exceeded your current quota",
-          "credit_balance_exhausted",
-          "no credits remaining",
-          "model\\b.*\\bnot (?:be )?found",
-          "model_not_found"
-        ],
-        "cooldown_seconds": 3600,
-        "timeout_seconds": 120
-      }
-    }
+    "@slkiser/opencode-quota@5.0.3"
   ],
   "policies": [
     {

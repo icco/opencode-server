@@ -79,7 +79,7 @@ try {
     assert.ok(packages.some(p => p.id === "superpowers"));
     assert.ok(!data.some(p => p.id === "opencode-orchestra"));
     assert.ok(packages.some(p => p.id === "@slkiser/opencode-quota.server"), JSON.stringify(packages));
-    assert.ok(packages.some(p => p.id.includes("fallback")), JSON.stringify(packages));
+    assert.ok(!packages.some(p => p.id.includes("fallback")), JSON.stringify(packages));
     return true;
   });
   const commands = (await request("/api/command")).data;
