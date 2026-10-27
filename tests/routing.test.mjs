@@ -50,10 +50,9 @@ test("existing providers, MCP integrations and quota are preserved", () => {
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
 });
 
-test("paid providers fall back across OpenAI and Google and show $50 budgets", async () => {
-  const fallback = config.plugins.find(p => p.package?.startsWith("opencode-runtime-fallback@"));
-  assert.match(fallback.package, /@\d+\.\d+\.\d+$/);
-  assert.deepEqual(fallback.options.fallback_models.map(m => m.split("/")[0]), ["openai", "google"]);
+test("LiteLLM picks the model behind Opus and quota shows $50 budgets", async () => {
+  assert.equal(config.model, "anthropic/claude-opus-5-5");
+  assert.ok(!config.plugins.some(p => (p.package ?? p).startsWith("opencode-runtime-fallback@")));
   const quota = parse(await readFile(new URL("../config/quota-toast.jsonc", import.meta.url), "utf8"));
   assert.deepEqual(quota.quotaProviders.map(p => [p.providerId, p.windows[0].usdBudget]), [["anthropic", 50], ["openai", 50], ["google", 50]]);
   assert.equal(quota.waitForQuotaReset, false);
