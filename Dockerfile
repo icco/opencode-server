@@ -68,11 +68,13 @@ ENV HOME=/data \
     OPENCODE_CONFIG=/etc/opencode/opencode.json \
     OPENCODE_CLIENT=app \
     DISABLE_AUTOUPDATER=1 \
-    OPENCHAMBER_CHATS_DIR=/data/workspace/.chats
+    OPENCHAMBER_CHATS_DIR=/data/workspace/.chats \
+    NPM_CONFIG_USERCONFIG=/etc/opencode/npmrc
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY config/quota-toast.jsonc /etc/opencode/quota-toast.jsonc
+COPY config/npmrc /etc/opencode/npmrc
 COPY config/openchamber-policy.json /etc/openchamber/policy.json
 COPY skills /etc/opencode/skills
 RUN npm ci --prefix /etc/opencode/skills/observability-graph/scripts --omit=dev --ignore-scripts --no-audit --no-fund \

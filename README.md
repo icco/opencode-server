@@ -48,7 +48,7 @@ docker compose exec opencode opencode auth login openai --method key --server ht
 - **Gemini:** enter a key or set `GOOGLE_GENERATIVE_AI_API_KEY`.
 - **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`.
 - **OpenAI:** enter a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
-- **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`.
+- **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`. `GH_TOKEN` also authenticates pnpm to `@icco` packages on GitHub Packages via [`config/npmrc`](config/npmrc).
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
 
 ## Budgets and fallback
