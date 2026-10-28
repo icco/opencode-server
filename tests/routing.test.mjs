@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
@@ -40,20 +40,19 @@ test("image-owned skills are discoverable", async () => {
 });
 
 test("existing providers, MCP integrations and quota are preserved", () => {
-  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "grafana", "karakeep", "lunchmoney", "notion", "robinhood"]);
+  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "gmail", "grafana", "karakeep", "lunchmoney", "notion", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.3"));
   const allowed = config.policies.filter(p => p.action === "provider.use" && p.effect === "allow").map(p => p.resource);
-  assert.deepEqual(allowed.sort(), ["anthropic", "github-copilot", "google", "ollama", "openai"]);
+  assert.deepEqual(allowed.sort(), ["anthropic", "google", "ollama", "openai"]);
   assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
   assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
 });
 
-test("paid providers fall back to Copilot and show $50 budgets", async () => {
-  const fallback = config.plugins.find(p => p.package?.startsWith("opencode-runtime-fallback@"));
-  assert.match(fallback.package, /@\d+\.\d+\.\d+$/);
-  assert.deepEqual(fallback.options.fallback_models.map(m => m.split("/")[0]), ["openai", "google", "github-copilot"]);
+test("LiteLLM picks the model behind Opus and quota shows $50 budgets", async () => {
+  assert.equal(config.model, "anthropic/claude-opus-5-5");
+  assert.ok(!config.plugins.some(p => (p.package ?? p).startsWith("opencode-runtime-fallback@")));
   const quota = parse(await readFile(new URL("../config/quota-toast.jsonc", import.meta.url), "utf8"));
   assert.deepEqual(quota.quotaProviders.map(p => [p.providerId, p.windows[0].usdBudget]), [["anthropic", 50], ["openai", 50], ["google", 50]]);
   assert.equal(quota.waitForQuotaReset, false);
@@ -90,4 +89,6 @@ test("build tooling and schema versions stay aligned", async () => {
     assert.equal(pkg.devDependencies[name], version, `${name} must match the server`);
   assert.ok(!pkg.devDependencies["@oeronteros-1/opencode-orchestra"]);
   assert.equal(dockerfile.match(/^ARG PNPM_VERSION=(.+)$/m)[1], pkg.packageManager.split("@")[1]);
+  await assert.rejects(stat(new URL("../opencode.jsonc", import.meta.url)));
+  await assert.rejects(stat(new URL("../opencode.json", import.meta.url)));
 });

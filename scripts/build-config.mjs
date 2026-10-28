@@ -3,7 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { parse, printParseErrorCode } from "jsonc-parser";
 
-export async function readConfig(path = new URL("../opencode.jsonc", import.meta.url)) {
+export async function readConfig(path = new URL("../config/system.jsonc", import.meta.url)) {
   const errors = [];
   const config = parse((await readFile(path, "utf8")).replace(/^\uFEFF/, ""), errors, { allowTrailingComma: true });
   if (errors.length) {
@@ -14,7 +14,7 @@ export async function readConfig(path = new URL("../opencode.jsonc", import.meta
 }
 
 export async function buildConfig({
-  configPath = new URL("../opencode.jsonc", import.meta.url),
+  configPath = new URL("../config/system.jsonc", import.meta.url),
 } = {}) {
   const config = await readConfig(configPath);
   return JSON.parse(JSON.stringify(config));

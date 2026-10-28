@@ -40,25 +40,23 @@ docker compose up -d --force-recreate
 Connect providers in OpenCode or run:
 
 ```sh
-docker compose exec opencode opencode auth login github-copilot --server http://127.0.0.1:4096
-docker compose exec opencode opencode auth login google --server http://127.0.0.1:4096
+docker compose exec opencode opencode auth login google --method key --server http://127.0.0.1:4096
 docker compose exec opencode opencode auth login anthropic --method key --server http://127.0.0.1:4096
-docker compose exec opencode opencode auth login openai --server http://127.0.0.1:4096
+docker compose exec opencode opencode auth login openai --method key --server http://127.0.0.1:4096
 ```
 
-- **GitHub Copilot:** complete device login with a subscribed account.
-- **Gemini:** choose the API-key method or set `GOOGLE_GENERATIVE_AI_API_KEY`. Organization-backed Code Assist OAuth also needs `OPENCODE_GEMINI_PROJECT_ID`; see the [Gemini plugin's account requirements](https://github.com/jenslys/opencode-gemini-auth).
-- **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`. Claude Pro and Max subscriptions do not work outside Claude Code.
-- **OpenAI:** choose the API-key method with a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
+- **Gemini:** enter a key or set `GOOGLE_GENERATIVE_AI_API_KEY`.
+- **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`.
+- **OpenAI:** enter a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
 - **Ollama:** `qwen3-coder:30b` and `ornith:35b` are served from `http://ollama:11434/v1`, so run an [Ollama](https://docs.ollama.com/docker) container named `ollama` on the same Compose network with those models pulled. It needs no key.
-- **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`. This is separate from Copilot login; stored credentials persist in `/data/.config/gh`.
+- **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`. `GH_TOKEN` also authenticates pnpm to `@icco` packages on GitHub Packages via [`config/npmrc`](config/npmrc).
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
 
 ## Budgets and fallback
 
-Build and compaction default to `anthropic/claude-opus-5-5`. When a provider rejects a request for quota, rate limit, or availability, [opencode-runtime-fallback](https://github.com/youngbinkim0/opencode-fallback) continues the session on OpenAI, then Google, then Copilot, and retries the failed provider after an hour. Set a $50 monthly spend limit in each provider console; that limit is what stops spending.
+Build defaults to `anthropic/claude-opus-5-5`. The general, explore, title, and compaction agents use `openai/fast-agent`, a [LiteLLM](https://docs.litellm.ai/) model group, so they need the `openai` provider's `baseURL` pointed at a LiteLLM proxy that defines it. Point the `anthropic` provider at the proxy too, and let the proxy choose the model behind `claude-opus-5-5` with [key-level router settings](https://docs.litellm.ai/docs/proxy/keys_teams_router_settings), so a spent provider is skipped before the call. Keep each provider console's spend limit above the proxy's budget, so the proxy stops a provider before the console does.
 
-`/quota` shows Copilot plus a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
+`/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
 
 ## MCP integrations
 
@@ -67,6 +65,7 @@ Set the variables below before creating the container. For remote servers, open 
 | Integration | Setup |
 | --- | --- |
 | [Context7](https://mcp.context7.com/mcp) | Remote library documentation. |
+| [Gmail](https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server) | Remote server at `https://gmailmcp.googleapis.com/mcp/v1` (Developer Preview). Create a Web application OAuth client with redirect URI `http://127.0.0.1:19876/callback` and set `GMAIL_MCP_CLIENT_ID` and `GMAIL_MCP_CLIENT_SECRET`; read and draft only, no send. The callback listener is on the container loopback, so after consent copy the failed `127.0.0.1:19876` URL from the browser and run `docker compose exec opencode curl -fsS "<url>"`. |
 | [Grafana](https://github.com/grafana/mcp-grafana) | `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN`; bundled tools are read-only. |
 | [Karakeep](https://docs.karakeep.app/integrations/mcp) | `KARAKEEP_API_KEY` and `KARAKEEP_API_ADDR` (defaults to `https://hoard.natwelch.com`); includes write tools. |
 | [Lunch Money](https://github.com/akutishevsky/lunchmoney-mcp) | `LUNCHMONEY_API_TOKEN` from [developer settings](https://my.lunchmoney.app/developers); required to start its MCP server. |
@@ -83,13 +82,13 @@ Grafana and Karakeep can connect before their credentials are validated; check a
 
 ## Agents and configuration
 
-- **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Build and General ask before `rm` commands whose text contains `.config`, `.local`, `HOME`, `~`, or `/data/.`, or ends in `/data`. Tool permissions do not sandbox shell access.
-- [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr` and `go-repo`](skills/). [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
+- **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Gmail, Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Build and General ask before `rm` commands whose text contains `.config`, `.local`, `HOME`, `~`, or `/data/.`, or ends in `/data`. Tool permissions do not sandbox shell access.
+- [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr`, `go-repo`, and `observability-graph`](skills/), with the graph renderer's dependencies preinstalled. [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
 - [OpenCode Quota](https://github.com/slkiser/opencode-quota) provides `/quota` and `/quota_status`.
-- Defaults and pinned plugins live in [`opencode.jsonc`](opencode.jsonc). The image converts it to `/etc/opencode/opencode.json`, which overrides matching settings in global and project `opencode.json(c)` files. See the [V2 configuration guide](https://opencode.ai/v2/docs/config).
+- Defaults and pinned plugins live in [`config/system.jsonc`](config/system.jsonc). The image converts it to `/etc/opencode/opencode.json`, which overrides matching settings in global and project `opencode.json(c)` files. Keeping the source file out of `opencode.json(c)` prevents OpenCode from auto-discovering this repository as a second project configuration. See the [V2 configuration guide](https://opencode.ai/v2/docs/config).
 - Each startup copies the image's [`AGENTS.md`](AGENTS.md) to `/data/.config/opencode/AGENTS.md`, replacing local edits. Change instructions in this repository and rebuild.
 
-To replace the image defaults, install dependencies, edit `opencode.jsonc`, run `node scripts/build-config.mjs runtime.json`, and mount the output read-only at `/etc/opencode/opencode.json`. Restart the container after replacing it.
+To replace the image defaults, install dependencies, edit `config/system.jsonc`, run `node scripts/build-config.mjs runtime.json`, and mount the output read-only at `/etc/opencode/opencode.json`. Restart the container after replacing it.
 
 ## Hosting
 
@@ -104,7 +103,7 @@ code.example.com {
 }
 ```
 
-`/health` is unauthenticated and reports diagnostics, so keep it off the internet. OpenChamber runs in [enterprise mode](https://docs.openchamber.dev/security/#enterprise-mode), which disables the relay and untrusted extensions. Login is rate limited; add a passkey under Settings after first sign-in.
+`/health` is unauthenticated and reports diagnostics, so keep it off the internet. OpenChamber runs in [enterprise mode](https://docs.openchamber.dev/security/#enterprise-mode), which disables the relay and untrusted extensions. [Resource Monitor](https://github.com/openchamber/openchamber-resource-monitor) is allowed in `/etc/openchamber/policy.json`; install it once from Settings, Extensions with that URL. Login is rate limited; add a passkey under Settings after first sign-in.
 
 The container runs as UID 1000 with dropped capabilities and resource limits. Login grants code execution and access to stored credentials; this is a trusted-user service, not a multi-tenant sandbox.
 

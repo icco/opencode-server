@@ -1,4 +1,4 @@
-FROM golang:1.27.2-trixie AS golang
+FROM golang:1.27.3-trixie AS golang
 
 FROM golang AS yq
 ARG YQ_VERSION=v4.54.1
@@ -6,29 +6,32 @@ RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION
 
 FROM golang AS gotools
 ARG TASK_VERSION=v3.54.0
-ARG GOLANGCI_LINT_VERSION=v2.14.0
+ARG GOLANGCI_LINT_VERSION=v2.15.0
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/go-task/task/v3/cmd/task@${TASK_VERSION}" \
     && CGO_ENABLED=0 GOBIN=/out go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
-FROM node:26.11.1-trixie-slim AS tools
+FROM node:26.12.1-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
 COPY --from=gotools /out/task /out/golangci-lint /usr/local/bin/
-COPY --from=grafana/mcp-grafana:2.0.2@sha256:78d208116ec52b09b44f0eca66892073b39aefcb64483c54d43255c8eab7e97a /app/mcp-grafana /usr/local/bin/mcp-grafana
+COPY --from=grafana/mcp-grafana:2.1.1@sha256:71a3f4e6f412d253611314233df709ec2571fb50e39742d23fa2940f670646dc /app/mcp-grafana /usr/local/bin/mcp-grafana
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
       gettext-base gh git git-lfs jq less moreutils openssh-client openssl \
       procps python3 python3-pip python3-venv ripgrep rsync shellcheck \
       silversearcher-ag tini tmux tree unzip vim wget xz-utils zip zoxide zsh \
+    && apt-get install -y --no-install-recommends --only-upgrade ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && ln -s /usr/bin/fdfind /usr/local/bin/fd
 
-ARG OPENCODE_VERSION=2.0.32
-ARG OPENCHAMBER_VERSION=2.4.0
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+
+ARG OPENCODE_VERSION=2.2.0
+ARG OPENCHAMBER_VERSION=2.5.2
 ARG TYPESCRIPT_VERSION=7.0.2
-ARG PNPM_VERSION=12.11.2
+ARG PNPM_VERSION=12.15.0
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
@@ -46,7 +49,8 @@ RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; e
 
 FROM tools AS config
 WORKDIR /build
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml opencode.jsonc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY config/system.jsonc ./config/system.jsonc
 COPY scripts/build-config.mjs ./scripts/build-config.mjs
 RUN pnpm install --frozen-lockfile --ignore-scripts --no-optional \
     && node scripts/build-config.mjs /build/runtime.json
@@ -63,13 +67,18 @@ ENV HOME=/data \
     XDG_CACHE_HOME=/data/.cache \
     OPENCODE_CONFIG=/etc/opencode/opencode.json \
     OPENCODE_CLIENT=app \
+    DISABLE_AUTOUPDATER=1 \
     OPENCHAMBER_CHATS_DIR=/data/workspace/.chats \
-    SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+    NPM_CONFIG_USERCONFIG=/etc/opencode/npmrc
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY config/quota-toast.jsonc /etc/opencode/quota-toast.jsonc
+COPY config/npmrc /etc/opencode/npmrc
+COPY config/openchamber-policy.json /etc/openchamber/policy.json
 COPY skills /etc/opencode/skills
+RUN npm ci --prefix /etc/opencode/skills/observability-graph/scripts --omit=dev --ignore-scripts --no-audit --no-fund \
+    && npm cache clean --force
 COPY --chmod=755 entrypoint.sh healthcheck.sh openchamber-healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \

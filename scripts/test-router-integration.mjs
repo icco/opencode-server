@@ -74,22 +74,18 @@ try {
   await until(async () => {
     const { data } = await request("/api/plugin");
     const packages = data.filter(p => p.source.type === "package");
-    assert.ok(packages.length >= 4, JSON.stringify(data));
+    assert.ok(packages.length >= 3, JSON.stringify(data));
     assert.ok(packages.every(p => p.state.status === "active"), JSON.stringify(packages));
     assert.ok(packages.some(p => p.id === "superpowers"));
     assert.ok(!data.some(p => p.id === "opencode-orchestra"));
     assert.ok(packages.some(p => p.id === "@slkiser/opencode-quota.server"), JSON.stringify(packages));
-    assert.ok(packages.some(p => p.id.includes("fallback")), JSON.stringify(packages));
+    assert.ok(!packages.some(p => p.id.includes("fallback")), JSON.stringify(packages));
     return true;
   });
   const commands = (await request("/api/command")).data;
   for (const name of ["quota", "quota_status"])
     assert.ok(commands.some(c => c.name === name), `missing ${name}`);
-  const google = (await request("/api/integration/google")).data;
-  assert.ok(google.methods.some(m => m.type === "oauth" && m.id === "gemini-cli"));
-  const copilot = (await request("/api/integration/github-copilot")).data;
-  assert.ok(copilot.methods.some(m => m.type === "oauth"));
-  for (const provider of ["anthropic", "openai"]) {
+  for (const provider of ["anthropic", "openai", "google"]) {
     const { methods } = (await request(`/api/integration/${provider}`)).data;
     assert.ok(methods.some(m => m.type === "key"), `${provider} accepts an API key: ${JSON.stringify(methods)}`);
   }
@@ -135,13 +131,13 @@ try {
     for (const name of external ? ["lunchmoney", "grafana", "karakeep"] : ["lunchmoney", "karakeep"]) {
       assert.equal(data.find(server => server.name === name)?.status.status, "connected", JSON.stringify(data));
     }
-    for (const name of ["context7", "notion"])
+    for (const name of ["context7", "gmail", "notion"])
       assert.ok(data.some(server => server.name === name), `missing ${name}`);
     return true;
   });
   // Without credentials, a dropped provider policy shows up as OpenCode's free models.
   const models = (await request("/api/model")).data;
-  assert.ok(models.every(m => ["google", "github-copilot", "anthropic", "openai"].includes(m.providerID)), `policies hide other providers' models: ${models.map(m => m.providerID)}`);
+  assert.ok(models.every(m => ["google", "anthropic", "openai"].includes(m.providerID)), `policies hide other providers' models: ${models.map(m => m.providerID)}`);
   session = (await request("/api/session", { title: "V2 integration test", agent: "build",
     location: { directory } })).data;
   await request(`/api/session/${session.id}/command`, { name: "quota_announcements", text: "" });
