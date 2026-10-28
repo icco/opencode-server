@@ -7,8 +7,8 @@
     "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
-    "@opencode/plugin": "2.1.4",
-    "@opencode/schema": "2.1.4",
+    "@opencode/plugin": "2.2.0",
+    "@opencode/schema": "2.2.0",
     "effect": "4.0.6",
     "jsonc-parser": "3.3.1"
   }

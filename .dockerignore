@@ -12,3 +12,4 @@
 !pnpm-workspace.yaml
 !scripts/
 !scripts/build-config.mjs
+**/node_modules

@@ -48,12 +48,12 @@ docker compose exec opencode opencode auth login openai --method key --server ht
 - **Gemini:** enter a key or set `GOOGLE_GENERATIVE_AI_API_KEY`.
 - **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`.
 - **OpenAI:** enter a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
-- **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`.
+- **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`. `GH_TOKEN` also authenticates pnpm to `@icco` packages on GitHub Packages via [`config/npmrc`](config/npmrc).
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
 
 ## Budgets and fallback
 
-Build and compaction default to `anthropic/claude-opus-5-5`. When a provider rejects a request for quota, rate limit, or availability, [opencode-runtime-fallback](https://github.com/youngbinkim0/opencode-fallback) continues the session on OpenAI, then Google, and retries the failed provider after an hour. Set a $50 monthly spend limit in each provider console; that limit is what stops spending.
+Build defaults to `anthropic/claude-opus-5-5`. The general, explore, title, and compaction agents use `openai/fast-agent`, a [LiteLLM](https://docs.litellm.ai/) model group, so they need the `openai` provider's `baseURL` pointed at a LiteLLM proxy that defines it. Point the `anthropic` provider at the proxy too, and let the proxy choose the model behind `claude-opus-5-5` with [key-level router settings](https://docs.litellm.ai/docs/proxy/keys_teams_router_settings), so a spent provider is skipped before the call. Keep each provider console's spend limit above the proxy's budget, so the proxy stops a provider before the console does.
 
 `/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
 
@@ -82,7 +82,7 @@ Grafana and Karakeep can connect before their credentials are validated; check a
 ## Agents and configuration
 
 - **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Gmail, Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Build and General ask before `rm` commands whose text contains `.config`, `.local`, `HOME`, `~`, or `/data/.`, or ends in `/data`. Tool permissions do not sandbox shell access.
-- [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr` and `go-repo`](skills/). [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
+- [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr`, `go-repo`, and `observability-graph`](skills/), with the graph renderer's dependencies preinstalled. [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
 - [OpenCode Quota](https://github.com/slkiser/opencode-quota) provides `/quota` and `/quota_status`.
 - Defaults and pinned plugins live in [`config/system.jsonc`](config/system.jsonc). The image converts it to `/etc/opencode/opencode.json`, which overrides matching settings in global and project `opencode.json(c)` files. Keeping the source file out of `opencode.json(c)` prevents OpenCode from auto-discovering this repository as a second project configuration. See the [V2 configuration guide](https://opencode.ai/v2/docs/config).
 - Each startup copies the image's [`AGENTS.md`](AGENTS.md) to `/data/.config/opencode/AGENTS.md`, replacing local edits. Change instructions in this repository and rebuild.

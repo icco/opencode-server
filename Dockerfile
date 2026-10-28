@@ -28,8 +28,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-ARG OPENCODE_VERSION=2.1.4
-ARG OPENCHAMBER_VERSION=2.5.1
+ARG OPENCODE_VERSION=2.2.0
+ARG OPENCHAMBER_VERSION=2.5.2
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.15.0
 ARG TARGETARCH
@@ -68,13 +68,17 @@ ENV HOME=/data \
     OPENCODE_CONFIG=/etc/opencode/opencode.json \
     OPENCODE_CLIENT=app \
     DISABLE_AUTOUPDATER=1 \
-    OPENCHAMBER_CHATS_DIR=/data/workspace/.chats
+    OPENCHAMBER_CHATS_DIR=/data/workspace/.chats \
+    NPM_CONFIG_USERCONFIG=/etc/opencode/npmrc
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY AGENTS.md /etc/opencode/AGENTS.md
 COPY config/quota-toast.jsonc /etc/opencode/quota-toast.jsonc
+COPY config/npmrc /etc/opencode/npmrc
 COPY config/openchamber-policy.json /etc/openchamber/policy.json
 COPY skills /etc/opencode/skills
+RUN npm ci --prefix /etc/opencode/skills/observability-graph/scripts --omit=dev --ignore-scripts --no-audit --no-fund \
+    && npm cache clean --force
 COPY --chmod=755 entrypoint.sh healthcheck.sh openchamber-healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
