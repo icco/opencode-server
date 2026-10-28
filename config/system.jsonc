@@ -81,6 +81,25 @@
       "model": "openai/fast-agent"
     }
   },
+  "providers": {
+    "ollama": {
+      "name": "Ollama",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://ollama:11434/v1"
+      },
+      "models": {
+        "qwen3-coder:30b": {
+          "name": "Qwen3 Coder 30B",
+          "limit": { "context": 32768, "output": 8192 }
+        },
+        "ornith:35b": {
+          "name": "Ornith 35B",
+          "limit": { "context": 32768, "output": 8192 }
+        }
+      }
+    }
+  },
   "mcp": {
     "servers": {
       "notion": {
@@ -172,6 +191,11 @@
     {
       "action": "provider.use",
       "resource": "openai",
+      "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "ollama",
       "effect": "allow"
     }
   ]
