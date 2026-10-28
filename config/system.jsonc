@@ -128,6 +128,14 @@
       "context7": {
         "type": "remote",
         "url": "https://mcp.context7.com/mcp"
+      },
+      "mastodon": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "activitypub-mcp"
+        ]
       }
     }
   },
