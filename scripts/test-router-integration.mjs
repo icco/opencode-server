@@ -89,6 +89,8 @@ try {
     const { methods } = (await request(`/api/integration/${provider}`)).data;
     assert.ok(methods.some(m => m.type === "key"), `${provider} accepts an API key: ${JSON.stringify(methods)}`);
   }
+  const claude = (await request("/api/integration/claude-agent")).data;
+  assert.ok(claude.methods.some(m => m.id === "claude-login"), `Claude Agent offers the Claude Code login: ${JSON.stringify(claude.methods)}`);
   const agents = (await request("/api/agent")).data;
   const lead = agents.find(a => a.id === "build");
   assert.ok(lead, "native build agent is available");
@@ -137,7 +139,7 @@ try {
   });
   // Without credentials, a dropped provider policy shows up as OpenCode's free models.
   const models = (await request("/api/model")).data;
-  assert.ok(models.every(m => ["google", "anthropic", "openai"].includes(m.providerID)), `policies hide other providers' models: ${models.map(m => m.providerID)}`);
+  assert.ok(models.every(m => ["google", "anthropic", "openai", "claude-agent"].includes(m.providerID)), `policies hide other providers' models: ${models.map(m => m.providerID)}`);
   session = (await request("/api/session", { title: "V2 integration test", agent: "build",
     location: { directory } })).data;
   await request(`/api/session/${session.id}/command`, { name: "quota_announcements", text: "" });

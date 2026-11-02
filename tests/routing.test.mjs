@@ -16,7 +16,7 @@ const config = await readConfig();
 test("configuration validates strictly against the installed V2 schema", () => {
   const parsed = Schema.decodeUnknownSync(Config.Info, { onExcessProperty: "error" })(config);
   assert.equal(parsed.default_agent, "build");
-  assert.equal(parsed.model.providerID, "anthropic");
+  assert.equal(parsed.model.providerID, "claude-agent");
   assert.equal(config.worktree.directory, "/data/workspace/.worktrees");
 });
 
@@ -43,15 +43,15 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "gmail", "grafana", "karakeep", "lunchmoney", "mastodon", "notion", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@5.0.3"));
   const allowed = config.policies.filter(p => p.action === "provider.use" && p.effect === "allow").map(p => p.resource);
-  assert.deepEqual(allowed.sort(), ["anthropic", "google", "openai"]);
+  assert.deepEqual(allowed.sort(), ["anthropic", "claude-agent", "google", "openai"]);
   assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
   assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
 });
 
-test("LiteLLM picks the model behind auto and quota shows $50 budgets", async () => {
-  assert.equal(config.model, "anthropic/auto");
+test("build defaults to the Claude Code subscription and quota shows $50 budgets", async () => {
+  assert.equal(config.model, "claude-agent/opus");
   assert.equal(config.providers.anthropic.models.auto.name, "Auto (Jev)");
   assert.ok(!config.plugins.some(p => (p.package ?? p).startsWith("opencode-runtime-fallback@")));
   const quota = parse(await readFile(new URL("../config/quota-toast.jsonc", import.meta.url), "utf8"));
