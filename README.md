@@ -24,6 +24,7 @@ All state lives in the `/data` volume, and startup exits if `/data` is not a vol
 | `.local/state/opencode` | Service registration, locks, and quota budget counters |
 | `.config/opencode`, `.config/gh` | Global `AGENTS.md` (replaced on each start), GitHub CLI login |
 | `.config/openchamber` | OpenChamber settings, passkeys, and login secret |
+| `.claude`, `.claude.json` | Claude Code login, settings, and Claude Agent transcripts |
 | `workspace` | Repositories, worktrees, and OpenChamber chats in `workspace/.chats` |
 
 Back up the whole volume. To restore, stop both containers, replace the volume contents, and start them again. The servers keep files open or cached in memory, so deleting one from a running volume takes effect at the next restart.
@@ -43,19 +44,24 @@ Connect providers in OpenCode or run:
 docker compose exec opencode opencode auth login google --method key --server http://127.0.0.1:4096
 docker compose exec opencode opencode auth login anthropic --method key --server http://127.0.0.1:4096
 docker compose exec opencode opencode auth login openai --method key --server http://127.0.0.1:4096
+docker compose exec -it opencode claude auth login
+docker compose exec opencode opencode auth login claude-agent --method claude-login --server http://127.0.0.1:4096
 ```
 
 - **Gemini:** enter a key or set `GOOGLE_GENERATIVE_AI_API_KEY`.
 - **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`.
 - **OpenAI:** enter a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
+- **Claude subscription:** `claude auth login` prints a URL; open it and paste the code back. Claude Code keeps the login in `/data/.claude/.credentials.json` and refreshes it. The next command connects the [Claude Agent provider](https://github.com/anomalyco/opencode/releases/tag/v2.2.3), which runs Claude Code with that login. Claude Code uses `ANTHROPIC_API_KEY` instead of the login whenever that variable is set, so give the Anthropic key to `providers.anthropic.settings.apiKey` rather than the environment.
 - **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`. `GH_TOKEN` also authenticates pnpm to `@icco` packages on GitHub Packages via [`config/npmrc`](config/npmrc).
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
 
 ## Budgets and fallback
 
-Build defaults to `anthropic/claude-opus-5-5`. The general, explore, title, and compaction agents use `openai/fast-agent`, a [LiteLLM](https://docs.litellm.ai/) model group, so they need the `openai` provider's `baseURL` pointed at a LiteLLM proxy that defines it. Point the `anthropic` provider at the proxy too, and let the proxy choose the model behind `claude-opus-5-5` with [key-level router settings](https://docs.litellm.ai/docs/proxy/keys_teams_router_settings), so a spent provider is skipped before the call. Keep each provider console's spend limit above the proxy's budget, so the proxy stops a provider before the console does.
+Build defaults to `claude-agent/opus`, Opus on your Claude subscription. On its own, a spent subscription stops Build until you pick another model. To fall back automatically, point Claude Agent at the LiteLLM proxy root with `providers.claude-agent.settings.baseURL`, and send the proxy key as `providers.claude-agent.headers.x-litellm-api-key: Bearer <key>`. LiteLLM [forwards the subscription login](https://docs.litellm.ai/docs/tutorials/claude_code_max_subscription) to `anthropic/` deployments, so the proxy's fallbacks take over on a 429.
 
-`/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
+The general, explore, title, and compaction agents use `openai/fast-agent`, a [LiteLLM](https://docs.litellm.ai/) model group, so they need the `openai` provider's `baseURL` pointed at a LiteLLM proxy that defines it. Point the `anthropic` provider at the proxy too, and let the proxy choose the model behind `claude-opus-5-5` with [key-level router settings](https://docs.litellm.ai/docs/proxy/keys_teams_router_settings), so a spent provider is skipped before the call. Keep each provider console's spend limit above the proxy's budget, so the proxy stops a provider before the console does.
+
+`/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. Claude Agent requests show no cost and are not counted. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
 
 ## MCP integrations
 
@@ -108,7 +114,7 @@ The container runs as UID 1000 with dropped capabilities and resource limits. Lo
 
 ## Development
 
-The image includes Go, TypeScript, pnpm, go-task, golangci-lint, and shell tools. See [`Dockerfile`](Dockerfile) for pinned versions. Additional Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
+The image includes Go, TypeScript, pnpm, go-task, golangci-lint, Claude Code, and shell tools. See [`Dockerfile`](Dockerfile) for pinned versions. Additional Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
 
 With the Node.js and pnpm versions pinned in `Dockerfile` and `package.json`:
 

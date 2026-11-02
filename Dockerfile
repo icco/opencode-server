@@ -28,10 +28,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-ARG OPENCODE_VERSION=2.2.0
+ARG OPENCODE_VERSION=2.2.5
 ARG OPENCHAMBER_VERSION=2.5.2
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.15.0
+ARG CLAUDE_CODE_VERSION=2.1.316
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
@@ -42,10 +43,12 @@ RUN case "$TARGETARCH" in amd64) arch=x64 ;; arm64) arch=arm64 ;; *) exit 1 ;; e
       "https://registry.npmjs.org/@pnpm/exe.linux-${arch}/-/exe.linux-${arch}-${PNPM_VERSION}.tgz" \
       | tar -xz --strip-components=1 -C /opt/pnpm-cli \
     && ln -s /opt/pnpm-cli/pnpm /usr/local/bin/pnpm \
-    && XDG_CONFIG_HOME=/opt/pnpm-config pnpm --allow-build=@opencode/cli --allow-build=node-pty add --global \
+    && XDG_CONFIG_HOME=/opt/pnpm-config pnpm --allow-build=@opencode/cli --allow-build=node-pty --allow-build=@anthropic-ai/claude-code add --global \
       "@opencode/cli@${OPENCODE_VERSION}" "@openchamber/web@${OPENCHAMBER_VERSION}" "typescript@${TYPESCRIPT_VERSION}" \
+      "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" \
     && opencode --version \
-    && openchamber --version
+    && openchamber --version \
+    && claude --version
 
 FROM tools AS config
 WORKDIR /build
