@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "update": "disable",
-  "model": "anthropic/claude-opus-5-5",
+  "model": "claude-agent/opus",
   "default_agent": "build",
   "providers": {
     "openai": {
@@ -180,6 +180,11 @@
     {
       "action": "provider.use",
       "resource": "openai",
+      "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "claude-agent",
       "effect": "allow"
     }
   ]
