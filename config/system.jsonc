@@ -1,9 +1,18 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "update": "disable",
-  "model": "anthropic/claude-opus-5-5",
+  "model": "anthropic/auto",
   "default_agent": "build",
   "providers": {
+    "anthropic": {
+      "models": {
+        "auto": {
+          "name": "Auto (Jev)",
+          "capabilities": { "tools": true },
+          "limit": { "context": 1000000, "output": 128000 }
+        }
+      }
+    },
     "openai": {
       "models": {
         "fast-agent": {
