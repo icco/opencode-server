@@ -22,6 +22,12 @@
 - Resolve all code reviews by responding and marking review as resolved.
 - If you have questions, use the UI.
 
+## Memory
+
+- Save what you learn for later sessions with the OpenChamber memory tool: corrections, preferences, decisions with their reasons, and project facts that took effort to find. Open an entry when its title fits the task.
+- Durable facts about the user that every client should know also go to Notion Memory (`parent: "memory"`). Search it before personal or cross-project work.
+- Never store secrets or credentials in either memory.
+
 ## Scope
 
 - A narrow request defines the diff. Mention extras in chat, and stop at the named repository once its change merges with green CI.

@@ -10,12 +10,12 @@ ARG GOLANGCI_LINT_VERSION=v2.15.0
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/go-task/task/v3/cmd/task@${TASK_VERSION}" \
     && CGO_ENABLED=0 GOBIN=/out go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
-FROM node:26.12.1-trixie-slim AS tools
+FROM node:26.13.0-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
 COPY --from=gotools /out/task /out/golangci-lint /usr/local/bin/
-COPY --from=grafana/mcp-grafana:2.1.1@sha256:71a3f4e6f412d253611314233df709ec2571fb50e39742d23fa2940f670646dc /app/mcp-grafana /usr/local/bin/mcp-grafana
+COPY --from=grafana/mcp-grafana:2.2.0@sha256:697336440e34878f8e0b26a69675db8d7e97b4d0daec25ec5441c85ac6c60e81 /app/mcp-grafana /usr/local/bin/mcp-grafana
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
@@ -29,10 +29,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 ARG OPENCODE_VERSION=2.2.5
-ARG OPENCHAMBER_VERSION=2.5.2
+ARG OPENCHAMBER_VERSION=2.6.0
 ARG TYPESCRIPT_VERSION=7.0.2
-ARG PNPM_VERSION=12.15.0
-ARG CLAUDE_CODE_VERSION=2.1.316
+ARG PNPM_VERSION=12.16.1
+ARG CLAUDE_CODE_VERSION=2.1.318
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
@@ -72,25 +72,28 @@ ENV HOME=/data \
     OPENCODE_CLIENT=app \
     DISABLE_AUTOUPDATER=1 \
     OPENCHAMBER_CHATS_DIR=/data/workspace/.chats \
+    OPENCHAMBER_OPENCODE_PORT=4096 \
+    OPENCHAMBER_ENTERPRISE_MODE=1 \
+    OPENCHAMBER_ALLOW_NETWORK_ACCESS=1 \
     NPM_CONFIG_USERCONFIG=/etc/opencode/npmrc
 
 COPY --from=config /build/runtime.json /etc/opencode/opencode.json
 COPY AGENTS.md /etc/opencode/AGENTS.md
-COPY config/quota-toast.jsonc /etc/opencode/quota-toast.jsonc
+COPY config/quota-settings.jsonc /etc/opencode/quota-settings.jsonc
 COPY config/npmrc /etc/opencode/npmrc
 COPY config/openchamber-policy.json /etc/openchamber/policy.json
 COPY skills /etc/opencode/skills
 RUN npm ci --prefix /etc/opencode/skills/observability-graph/scripts --omit=dev --ignore-scripts --no-audit --no-fund \
     && npm cache clean --force
-COPY --chmod=755 entrypoint.sh healthcheck.sh openchamber-healthcheck.sh /usr/local/bin/
+COPY --chmod=755 entrypoint.sh healthcheck.sh /usr/local/bin/
 RUN mkdir -p /data/workspace /data/.config/opencode "$PNPM_HOME" \
     && usermod --home /data node \
     && chown -R node:node /data
 
 USER node
 WORKDIR /data/workspace
-EXPOSE 4096 3000
+EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
     CMD ["/usr/local/bin/healthcheck.sh"]
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
-CMD ["opencode", "serve", "--hostname", "0.0.0.0", "--port", "4096"]
+CMD ["openchamber", "serve", "--foreground", "--host", "0.0.0.0", "--port", "3000"]

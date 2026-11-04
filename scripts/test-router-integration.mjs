@@ -50,7 +50,7 @@ try {
     await writeFile(join(home, "runtime.json"), JSON.stringify({ ...await buildConfig(), skills: [join(root, "skills")] }));
     await copyFile(join(root, "AGENTS.md"), join(home, "config/opencode/AGENTS.md"));
     await mkdir(join(home, "config/opencode/opencode-quota"), { recursive: true });
-    await copyFile(join(root, "config/quota-toast.jsonc"), join(home, "config/opencode/opencode-quota/quota-toast.jsonc"));
+    await copyFile(join(root, "config/quota-settings.jsonc"), join(home, "config/opencode/opencode-quota/settings.jsonc"));
     // Keep the host's config, database overrides, and credentials out of this server.
     const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
       !/^(OPENCODE_|ORCHESTRA_|WAKATIME_|GRAFANA_|LUNCHMONEY_|KARAKEEP_|GOOGLE_|GIT_CONFIG_|GH_|GITHUB_)|API_KEY|TOKEN/.test(key)));
@@ -142,18 +142,13 @@ try {
   assert.ok(models.every(m => ["google", "anthropic", "openai", "claude-agent"].includes(m.providerID)), `policies hide other providers' models: ${models.map(m => m.providerID)}`);
   session = (await request("/api/session", { title: "V2 integration test", agent: "build",
     location: { directory } })).data;
-  await request(`/api/session/${session.id}/command`, { name: "quota_announcements", text: "" });
-  const inbox = (await request(`/api/session/${session.id}/inbox`)).data;
-  assert.ok(inbox.some(item => {
-    const report = item.payload.metadata?.opencodeQuota;
-    return report?.command === "quota_announcements" && report.document?.sections?.length;
-  }), `quota command produced a report: ${JSON.stringify(inbox)}`);
   await request(`/api/session/${session.id}/command`, { name: "quota_status", text: "" });
-  const status = (await request(`/api/session/${session.id}/inbox`)).data
-    .map(item => item.payload.metadata?.opencodeQuota).find(report => report?.command === "quota_status");
-  assert.ok(!JSON.stringify(status).includes("quotaProviders["), `quota config is valid: ${JSON.stringify(status)}`);
-  for (const id of ["anthropic-api", "openai-api", "google-api"])
-    assert.ok(JSON.stringify(status).includes(id), `quota_status lists ${id}: ${JSON.stringify(status)}`);
+  const status = JSON.stringify((await request(`/api/session/${session.id}/inbox`)).data
+    .find(item => item.payload.metadata?.opencodeQuota?.command === "quota_status"));
+  assert.ok(status?.includes("[OpenCode Quota report]"), `quota command produced a report: ${status}`);
+  assert.ok(!status.includes("settings_issue"), `quota settings are valid: ${status}`);
+  for (const number of [1, 2, 3])
+    assert.ok(status.includes(`providers.custom: custom ${number} (local-estimate`), `quota_status lists custom provider ${number}: ${status}`);
   await request(`/api/experimental/session/${session.id}/wait`, undefined, "POST");
   const context = (await request(`/api/session/${session.id}/message`)).data;
   assert.ok(!context.some(m => m.type === "assistant"), "no model inference");
