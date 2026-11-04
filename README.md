@@ -13,7 +13,7 @@ export OPENCHAMBER_UI_PASSWORD="$(openssl rand -hex 32)"
 docker compose up -d
 ```
 
-Open <http://localhost:3000> and sign in with `OPENCHAMBER_UI_PASSWORD`. Keep both passwords in your deployment's secret store and export them for later Compose commands; startup requires at least 32 characters for each. OpenCode has no host port; only OpenChamber reaches it, over the Compose network.
+Open <http://localhost:3000> and sign in with `OPENCHAMBER_UI_PASSWORD`. Keep both passwords in your deployment's secret store and export them for later Compose commands; startup requires at least 32 characters for each. OpenChamber starts and supervises OpenCode inside the same container, on `127.0.0.1:4096` with `OPENCODE_PASSWORD`; OpenCode has no host port.
 
 All state lives in the `/data` volume, and startup exits if `/data` is not a volume or bind mount. Bind mounts must be writable by UID/GID 1000. Compose also mounts the host's `~/.ssh` read-only; keys must be readable by UID 1000, and `known_hosts` must be maintained on the host.
 
@@ -23,18 +23,20 @@ All state lives in the `/data` volume, and startup exits if `/data` is not a vol
 | `.local/share/opencode/log/opencode.log` | OpenCode server log |
 | `.local/state/opencode` | Service registration, locks, and quota budget counters |
 | `.config/opencode`, `.config/gh` | Global `AGENTS.md` (replaced on each start), GitHub CLI login |
-| `.config/openchamber` | OpenChamber settings, passkeys, and login secret |
+| `.config/openchamber` | OpenChamber settings, passkeys, login secret, and agent memory (`memory.json`, `projects/*/memory.json`) |
 | `.claude`, `.claude.json` | Claude Code login, settings, and Claude Agent transcripts |
 | `workspace` | Repositories, worktrees, and OpenChamber chats in `workspace/.chats` |
 
-Back up the whole volume. To restore, stop both containers, replace the volume contents, and start them again. The servers keep files open or cached in memory, so deleting one from a running volume takes effect at the next restart.
+Back up the whole volume. To restore, stop the container, replace the volume contents, and start them again. The servers keep files open or cached in memory, so deleting one from a running volume takes effect at the next restart.
 
 To update the image or apply changed environment variables:
 
 ```sh
 docker compose pull
-docker compose up -d --force-recreate
+docker compose up -d --force-recreate --remove-orphans
 ```
+
+`--remove-orphans` also removes the `openchamber` container left by images before OpenChamber managed OpenCode.
 
 ## Connect accounts
 
@@ -89,6 +91,7 @@ Grafana and Karakeep can connect before their credentials are validated; check a
 
 - **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Gmail, Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Build and General ask before `rm` commands whose text contains `.config`, `.local`, `HOME`, `~`, or `/data/.`, or ends in `/data`. Tool permissions do not sandbox shell access.
 - [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr`, `go-repo`, and `observability-graph`](skills/), with the graph renderer's dependencies preinstalled. [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
+- [OpenChamber agent memory](https://docs.openchamber.dev/notes-todos-plans/#memory) keeps what agents learn across sessions, shown on the Memory tab of Project knowledge. The first start turns on Agent memory tool in Settings, General, OpenChamber Tools, and later starts keep your choice. [`AGENTS.md`](AGENTS.md) also sends durable facts about you to [Notion Memory](https://developers.notion.com/guides/mcp/overview) through the Notion MCP.
 - [OpenCode Quota](https://github.com/slkiser/opencode-quota) provides `/quota` and `/quota_status`.
 - Defaults and pinned plugins live in [`config/system.jsonc`](config/system.jsonc). The image converts it to `/etc/opencode/opencode.json`, which overrides matching settings in global and project `opencode.json(c)` files. Keeping the source file out of `opencode.json(c)` prevents OpenCode from auto-discovering this repository as a second project configuration. See the [V2 configuration guide](https://opencode.ai/v2/docs/config).
 - Each startup copies the image's [`AGENTS.md`](AGENTS.md) to `/data/.config/opencode/AGENTS.md`, replacing local edits. Change instructions in this repository and rebuild.

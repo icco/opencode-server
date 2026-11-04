@@ -24,8 +24,16 @@ if ! mountpoint -q /data; then
   exit 1
 fi
 
-mkdir -p "$XDG_CONFIG_HOME/opencode" "$XDG_CONFIG_HOME/gh" "$XDG_DATA_HOME/opencode" \
+mkdir -p "$XDG_CONFIG_HOME/opencode" "$XDG_CONFIG_HOME/gh" "$XDG_CONFIG_HOME/openchamber" "$XDG_DATA_HOME/opencode" \
   "$XDG_STATE_HOME/opencode" "$XDG_CACHE_HOME/opencode" "$HOME/workspace/.worktrees"
+
+# Turn on OpenChamber's agent memory once; a later choice in Settings sticks.
+settings="$XDG_CONFIG_HOME/openchamber/settings.json"
+if [ ! -s "$settings" ]; then
+  printf '%s\n' '{"agentMemoryToolEnabled":true}' > "$settings"
+elif jq -e 'type == "object" and (has("agentMemoryToolEnabled") | not)' "$settings" >/dev/null; then
+  jq '.agentMemoryToolEnabled = true' "$settings" | sponge "$settings"
+fi
 
 # V2 discovers global AGENTS.md; the legacy instructions config is ignored.
 # The image owns these rules, so every start replaces any local copy.
