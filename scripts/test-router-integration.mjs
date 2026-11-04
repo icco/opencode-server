@@ -143,12 +143,12 @@ try {
   session = (await request("/api/session", { title: "V2 integration test", agent: "build",
     location: { directory } })).data;
   await request(`/api/session/${session.id}/command`, { name: "quota_status", text: "" });
-  const status = (await request(`/api/session/${session.id}/inbox`)).data
-    .map(item => item.payload.metadata?.opencodeQuota).find(report => report?.command === "quota_status");
-  assert.ok(status?.document?.sections?.length, `quota command produced a report: ${JSON.stringify(status)}`);
-  assert.ok(!JSON.stringify(status).includes("providers.custom["), `quota config is valid: ${JSON.stringify(status)}`);
-  for (const id of ["anthropic-api", "openai-api", "google-api"])
-    assert.ok(JSON.stringify(status).includes(id), `quota_status lists ${id}: ${JSON.stringify(status)}`);
+  const status = JSON.stringify((await request(`/api/session/${session.id}/inbox`)).data
+    .find(item => item.payload.metadata?.opencodeQuota?.command === "quota_status"));
+  assert.ok(status?.includes("[OpenCode Quota report]"), `quota command produced a report: ${status}`);
+  assert.ok(!status.includes("settings_issue"), `quota settings are valid: ${status}`);
+  for (const number of [1, 2, 3])
+    assert.ok(status.includes(`providers.custom: custom ${number} (local-estimate`), `quota_status lists custom provider ${number}: ${status}`);
   await request(`/api/experimental/session/${session.id}/wait`, undefined, "POST");
   const context = (await request(`/api/session/${session.id}/message`)).data;
   assert.ok(!context.some(m => m.type === "assistant"), "no model inference");
