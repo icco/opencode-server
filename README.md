@@ -61,7 +61,7 @@ Build defaults to `claude-agent/opus`, Opus on your Claude subscription. On its 
 
 The general, explore, title, and compaction agents use `openai/fast-agent`, a [LiteLLM](https://docs.litellm.ai/) model group, so they need the `openai` provider's `baseURL` pointed at a LiteLLM proxy that defines it. Point the `anthropic` provider at the proxy too, and let the proxy choose the model behind `claude-opus-5-5` with [key-level router settings](https://docs.litellm.ai/docs/proxy/keys_teams_router_settings), so a spent provider is skipped before the call. `anthropic/auto` ("Auto (Jev)") is a proxy [complexity router](https://github.com/BerriAI/litellm/tree/main/litellm/router_strategy/complexity_router) that asks [Jev](https://jevai.org) which tier each new request needs. Keep each provider console's spend limit above the proxy's budget, so the proxy stops a provider before the console does.
 
-`/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. Claude Agent requests show no cost and are not counted. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
+`/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. Claude Agent requests show no cost and are not counted. The rows come from [`config/quota-settings.jsonc`](config/quota-settings.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/settings.jsonc`, replacing local edits.
 
 ## MCP integrations
 

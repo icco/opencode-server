@@ -31,7 +31,7 @@ mkdir -p "$XDG_CONFIG_HOME/opencode" "$XDG_CONFIG_HOME/gh" "$XDG_DATA_HOME/openc
 # The image owns these rules, so every start replaces any local copy.
 cp /etc/opencode/AGENTS.md "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 mkdir -p "$XDG_CONFIG_HOME/opencode/opencode-quota"
-cp /etc/opencode/quota-toast.jsonc "$XDG_CONFIG_HOME/opencode/opencode-quota/quota-toast.jsonc"
+cp /etc/opencode/quota-settings.jsonc "$XDG_CONFIG_HOME/opencode/opencode-quota/settings.jsonc"
 
 # Use gh credentials for HTTPS Git operations, including before the first login.
 # Both the helper configuration and interactive logins persist in /data.
