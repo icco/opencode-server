@@ -133,7 +133,7 @@ try {
     for (const name of external ? ["lunchmoney", "grafana", "karakeep"] : ["lunchmoney", "karakeep"]) {
       assert.equal(data.find(server => server.name === name)?.status.status, "connected", JSON.stringify(data));
     }
-    for (const name of ["context7", "gmail", "notion"])
+    for (const name of ["context7", "foods", "gmail", "notion"])
       assert.ok(data.some(server => server.name === name), `missing ${name}`);
     return true;
   });
