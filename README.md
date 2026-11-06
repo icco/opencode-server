@@ -72,6 +72,7 @@ Set the variables below before creating the container. For remote servers, open 
 | Integration | Setup |
 | --- | --- |
 | [Context7](https://mcp.context7.com/mcp) | Remote library documentation. |
+| [Foods](https://github.com/icco/foods) | Remote food, water and workout log at `https://foods.timeclimbers.com/mcp`; sign in with an allowlisted Google account. |
 | [Gmail](https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server) | Remote server at `https://gmailmcp.googleapis.com/mcp/v1` (Developer Preview). Create a Web application OAuth client with redirect URI `http://127.0.0.1:19876/callback` and set `GMAIL_MCP_CLIENT_ID` and `GMAIL_MCP_CLIENT_SECRET`; read and draft only, no send. The callback listener is on the container loopback, so after consent copy the failed `127.0.0.1:19876` URL from the browser and run `docker compose exec opencode curl -fsS "<url>"`. |
 | [Grafana](https://github.com/grafana/mcp-grafana) | `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN`; bundled tools are read-only. |
 | [Karakeep](https://docs.karakeep.app/integrations/mcp) | `KARAKEEP_API_KEY` and `KARAKEEP_API_ADDR` (defaults to `https://hoard.natwelch.com`); includes write tools. |
