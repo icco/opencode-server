@@ -172,7 +172,7 @@
   "plugins": [
     "opencode-wakatime@1.4.0",
     "superpowers@git+https://github.com/obra/superpowers.git#22f0b463e7a5e579904dd6211a520321035526f7",
-    "@slkiser/opencode-quota@6.1.0"
+    "@slkiser/opencode-quota@6.2.2"
   ],
   "policies": [
     {

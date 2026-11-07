@@ -1,7 +1,7 @@
 FROM golang:1.27.3-trixie AS golang
 
 FROM golang AS yq
-ARG YQ_VERSION=v4.54.1
+ARG YQ_VERSION=v4.54.2
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
 FROM golang AS gotools
@@ -28,11 +28,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-ARG OPENCODE_VERSION=2.2.5
-ARG OPENCHAMBER_VERSION=2.6.0
+ARG OPENCODE_VERSION=2.2.6
+ARG OPENCHAMBER_VERSION=2.6.1
 ARG TYPESCRIPT_VERSION=7.0.2
-ARG PNPM_VERSION=12.16.1
-ARG CLAUDE_CODE_VERSION=2.1.318
+ARG PNPM_VERSION=12.18.0
+ARG CLAUDE_CODE_VERSION=2.1.319
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
