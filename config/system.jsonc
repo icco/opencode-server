@@ -1,9 +1,18 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "update": "disable",
-  "model": "anthropic/claude-opus-5-5",
+  "model": "claude-agent/opus",
   "default_agent": "build",
   "providers": {
+    "anthropic": {
+      "models": {
+        "auto": {
+          "name": "Auto (Jev)",
+          "capabilities": { "tools": true },
+          "limit": { "context": 1000000, "output": 128000 }
+        }
+      }
+    },
     "openai": {
       "models": {
         "fast-agent": {
@@ -97,6 +106,10 @@
           "scope": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose"
         }
       },
+      "foods": {
+        "type": "remote",
+        "url": "https://foods.timeclimbers.com/mcp"
+      },
       "robinhood": {
         "type": "remote",
         "url": "https://agent.robinhood.com/mcp/trading"
@@ -158,8 +171,8 @@
   ],
   "plugins": [
     "opencode-wakatime@1.4.0",
-    "superpowers@git+https://github.com/obra/superpowers.git#2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
-    "@slkiser/opencode-quota@5.0.3"
+    "superpowers@git+https://github.com/obra/superpowers.git#22f0b463e7a5e579904dd6211a520321035526f7",
+    "@slkiser/opencode-quota@6.2.2"
   ],
   "policies": [
     {
@@ -180,6 +193,11 @@
     {
       "action": "provider.use",
       "resource": "openai",
+      "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "claude-agent",
       "effect": "allow"
     }
   ]

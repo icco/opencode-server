@@ -13,7 +13,7 @@ export OPENCHAMBER_UI_PASSWORD="$(openssl rand -hex 32)"
 docker compose up -d
 ```
 
-Open <http://localhost:3000> and sign in with `OPENCHAMBER_UI_PASSWORD`. Keep both passwords in your deployment's secret store and export them for later Compose commands; startup requires at least 32 characters for each. OpenCode has no host port; only OpenChamber reaches it, over the Compose network.
+Open <http://localhost:3000> and sign in with `OPENCHAMBER_UI_PASSWORD`. Keep both passwords in your deployment's secret store and export them for later Compose commands; startup requires at least 32 characters for each. OpenChamber starts and supervises OpenCode inside the same container, on `127.0.0.1:4096` with `OPENCODE_PASSWORD`; OpenCode has no host port.
 
 All state lives in the `/data` volume, and startup exits if `/data` is not a volume or bind mount. Bind mounts must be writable by UID/GID 1000. Compose also mounts the host's `~/.ssh` read-only; keys must be readable by UID 1000, and `known_hosts` must be maintained on the host.
 
@@ -23,17 +23,20 @@ All state lives in the `/data` volume, and startup exits if `/data` is not a vol
 | `.local/share/opencode/log/opencode.log` | OpenCode server log |
 | `.local/state/opencode` | Service registration, locks, and quota budget counters |
 | `.config/opencode`, `.config/gh` | Global `AGENTS.md` (replaced on each start), GitHub CLI login |
-| `.config/openchamber` | OpenChamber settings, passkeys, and login secret |
+| `.config/openchamber` | OpenChamber settings, passkeys, login secret, and agent memory (`memory.json`, `projects/*/memory.json`) |
+| `.claude`, `.claude.json` | Claude Code login, settings, and Claude Agent transcripts |
 | `workspace` | Repositories, worktrees, and OpenChamber chats in `workspace/.chats` |
 
-Back up the whole volume. To restore, stop both containers, replace the volume contents, and start them again. The servers keep files open or cached in memory, so deleting one from a running volume takes effect at the next restart.
+Back up the whole volume. To restore, stop the container, replace the volume contents, and start them again. The servers keep files open or cached in memory, so deleting one from a running volume takes effect at the next restart.
 
 To update the image or apply changed environment variables:
 
 ```sh
 docker compose pull
-docker compose up -d --force-recreate
+docker compose up -d --force-recreate --remove-orphans
 ```
+
+`--remove-orphans` also removes the `openchamber` container left by images before OpenChamber managed OpenCode.
 
 ## Connect accounts
 
@@ -43,19 +46,24 @@ Connect providers in OpenCode or run:
 docker compose exec opencode opencode auth login google --method key --server http://127.0.0.1:4096
 docker compose exec opencode opencode auth login anthropic --method key --server http://127.0.0.1:4096
 docker compose exec opencode opencode auth login openai --method key --server http://127.0.0.1:4096
+docker compose exec -it opencode claude auth login
+docker compose exec opencode opencode auth login claude-agent --method claude-login --server http://127.0.0.1:4096
 ```
 
 - **Gemini:** enter a key or set `GOOGLE_GENERATIVE_AI_API_KEY`.
 - **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`.
 - **OpenAI:** enter a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
+- **Claude subscription:** `claude auth login` prints a URL; open it and paste the code back. Claude Code keeps the login in `/data/.claude/.credentials.json` and refreshes it. The next command connects the [Claude Agent provider](https://github.com/anomalyco/opencode/releases/tag/v2.2.3), which runs Claude Code with that login. Claude Code uses `ANTHROPIC_API_KEY` instead of the login whenever that variable is set, so give the Anthropic key to `providers.anthropic.settings.apiKey` rather than the environment.
 - **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`. `GH_TOKEN` also authenticates pnpm to `@icco` packages on GitHub Packages via [`config/npmrc`](config/npmrc).
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
 
 ## Budgets and fallback
 
-Build defaults to `anthropic/claude-opus-5-5`. The general, explore, title, and compaction agents use `openai/fast-agent`, a [LiteLLM](https://docs.litellm.ai/) model group, so they need the `openai` provider's `baseURL` pointed at a LiteLLM proxy that defines it. Point the `anthropic` provider at the proxy too, and let the proxy choose the model behind `claude-opus-5-5` with [key-level router settings](https://docs.litellm.ai/docs/proxy/keys_teams_router_settings), so a spent provider is skipped before the call. Keep each provider console's spend limit above the proxy's budget, so the proxy stops a provider before the console does.
+Build defaults to `claude-agent/opus`, Opus on your Claude subscription. On its own, a spent subscription stops Build until you pick another model. To fall back automatically, point Claude Agent at the LiteLLM proxy root with `providers.claude-agent.settings.baseURL`, and send the proxy key as `providers.claude-agent.headers.x-litellm-api-key: Bearer <key>`. LiteLLM [forwards the subscription login](https://docs.litellm.ai/docs/tutorials/claude_code_max_subscription) to `anthropic/` deployments, so the proxy's fallbacks take over on a 429.
 
-`/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. The rows come from [`config/quota-toast.jsonc`](config/quota-toast.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/`, replacing local edits.
+The general, explore, title, and compaction agents use `openai/fast-agent`, a [LiteLLM](https://docs.litellm.ai/) model group, so they need the `openai` provider's `baseURL` pointed at a LiteLLM proxy that defines it. Point the `anthropic` provider at the proxy too, and let the proxy choose the model behind `claude-opus-5-5` with [key-level router settings](https://docs.litellm.ai/docs/proxy/keys_teams_router_settings), so a spent provider is skipped before the call. `anthropic/auto` ("Auto (Jev)") is a proxy [complexity router](https://github.com/BerriAI/litellm/tree/main/litellm/router_strategy/complexity_router) that asks [Jev](https://jevai.org) which tier each new request needs. Keep each provider console's spend limit above the proxy's budget, so the proxy stops a provider before the console does.
+
+`/quota` shows a $50 rolling 30-day row each for Anthropic, OpenAI, and Google, estimated from this server's requests with [models.dev](https://models.dev) prices. Claude Agent requests show no cost and are not counted. The rows come from [`config/quota-settings.jsonc`](config/quota-settings.jsonc), which each start copies to `/data/.config/opencode/opencode-quota/settings.jsonc`, replacing local edits.
 
 ## MCP integrations
 
@@ -64,6 +72,7 @@ Set the variables below before creating the container. For remote servers, open 
 | Integration | Setup |
 | --- | --- |
 | [Context7](https://mcp.context7.com/mcp) | Remote library documentation. |
+| [Foods](https://github.com/icco/foods) | Remote food, water and workout log at `https://foods.timeclimbers.com/mcp`; sign in with an allowlisted Google account. |
 | [Gmail](https://developers.google.com/workspace/gmail/api/guides/configure-mcp-server) | Remote server at `https://gmailmcp.googleapis.com/mcp/v1` (Developer Preview). Create a Web application OAuth client with redirect URI `http://127.0.0.1:19876/callback` and set `GMAIL_MCP_CLIENT_ID` and `GMAIL_MCP_CLIENT_SECRET`; read and draft only, no send. The callback listener is on the container loopback, so after consent copy the failed `127.0.0.1:19876` URL from the browser and run `docker compose exec opencode curl -fsS "<url>"`. |
 | [Grafana](https://github.com/grafana/mcp-grafana) | `GRAFANA_URL` and `GRAFANA_SERVICE_ACCOUNT_TOKEN`; bundled tools are read-only. |
 | [Karakeep](https://docs.karakeep.app/integrations/mcp) | `KARAKEEP_API_KEY` and `KARAKEEP_API_ADDR` (defaults to `https://hoard.natwelch.com`); includes write tools. |
@@ -83,6 +92,7 @@ Grafana and Karakeep can connect before their credentials are validated; check a
 
 - **Build** is the default agent and can use all configured tools. **General** can implement and test; **Explore** is read-only. Both subagents may use Context7 but deny Gmail, Grafana, Lunch Money, Karakeep, Notion, Robinhood, and further delegation. Build and General ask before `rm` commands whose text contains `.config`, `.local`, `HOME`, `~`, or `/data/.`, or ends in `/data`. Tool permissions do not sandbox shell access.
 - [Superpowers](https://github.com/obra/superpowers) supplies planning, debugging, testing, and review skills. The image also ships [`commit-push-pr`, `go-repo`, and `observability-graph`](skills/), with the graph renderer's dependencies preinstalled. [`AGENTS.md`](AGENTS.md) requires repository edits in `/data/workspace/.worktrees/<repository>/<task>`.
+- [OpenChamber agent memory](https://docs.openchamber.dev/notes-todos-plans/#memory) keeps what agents learn across sessions, shown on the Memory tab of Project knowledge. The first start turns on Agent memory tool in Settings, General, OpenChamber Tools, and later starts keep your choice. [`AGENTS.md`](AGENTS.md) also sends durable facts about you to [Notion Memory](https://developers.notion.com/guides/mcp/overview) through the Notion MCP.
 - [OpenCode Quota](https://github.com/slkiser/opencode-quota) provides `/quota` and `/quota_status`.
 - Defaults and pinned plugins live in [`config/system.jsonc`](config/system.jsonc). The image converts it to `/etc/opencode/opencode.json`, which overrides matching settings in global and project `opencode.json(c)` files. Keeping the source file out of `opencode.json(c)` prevents OpenCode from auto-discovering this repository as a second project configuration. See the [V2 configuration guide](https://opencode.ai/v2/docs/config).
 - Each startup copies the image's [`AGENTS.md`](AGENTS.md) to `/data/.config/opencode/AGENTS.md`, replacing local edits. Change instructions in this repository and rebuild.
@@ -108,7 +118,7 @@ The container runs as UID 1000 with dropped capabilities and resource limits. Lo
 
 ## Development
 
-The image includes Go, TypeScript, pnpm, go-task, golangci-lint, and shell tools. See [`Dockerfile`](Dockerfile) for pinned versions. Additional Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
+The image includes Go, TypeScript, pnpm, go-task, golangci-lint, Claude Code, and shell tools. See [`Dockerfile`](Dockerfile) for pinned versions. Additional Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
 
 With the Node.js and pnpm versions pinned in `Dockerfile` and `package.json`:
 
