@@ -19,3 +19,5 @@ minimumReleaseAgeExclude:
   - '@opencode/protocol@2.2.6'
   - '@opencode/schema@2.2.6'
   - '@opencode/util@2.2.6'
+  - '@openchamber/sdk@2.7.0'
+  - '@openchamber/web@2.7.0'

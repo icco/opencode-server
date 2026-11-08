@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
 ARG OPENCODE_VERSION=2.2.6
-ARG OPENCHAMBER_VERSION=2.6.1
+ARG OPENCHAMBER_VERSION=2.7.0
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.18.0
 ARG CLAUDE_CODE_VERSION=2.1.319
