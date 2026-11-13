@@ -30,3 +30,5 @@ minimumReleaseAgeExclude:
   - '@anthropic-ai/claude-code-linux-x64@2.1.323'
   - '@anthropic-ai/claude-code-win32-arm64@2.1.323'
   - '@anthropic-ai/claude-code-win32-x64@2.1.323'
+overrides:
+  minimatch@>=7.0.0 <11.0.1: ^11.0.1
