@@ -1,7 +1,7 @@
-FROM golang:1.27.3-trixie AS golang
+FROM golang:1.27.4-trixie AS golang
 
 FROM golang AS yq
-ARG YQ_VERSION=v4.54.2
+ARG YQ_VERSION=v4.54.3
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/mikefarah/yq/v4@${YQ_VERSION}"
 
 FROM golang AS gotools
@@ -10,12 +10,12 @@ ARG GOLANGCI_LINT_VERSION=v2.15.0
 RUN CGO_ENABLED=0 GOBIN=/out go install "github.com/go-task/task/v3/cmd/task@${TASK_VERSION}" \
     && CGO_ENABLED=0 GOBIN=/out go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
 
-FROM node:26.13.0-trixie-slim AS tools
+FROM node:26.13.1-trixie-slim AS tools
 
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
 COPY --from=gotools /out/task /out/golangci-lint /usr/local/bin/
-COPY --from=grafana/mcp-grafana:2.2.0@sha256:697336440e34878f8e0b26a69675db8d7e97b4d0daec25ec5441c85ac6c60e81 /app/mcp-grafana /usr/local/bin/mcp-grafana
+COPY --from=grafana/mcp-grafana:2.3.0@sha256:c27248b5919d09d64ea273ca1b128b32902c6796f6e2dfcd11849d4f1363f9ed /app/mcp-grafana /usr/local/bin/mcp-grafana
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates curl fd-find file fzf \
@@ -28,11 +28,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
 
-ARG OPENCODE_VERSION=2.2.6
-ARG OPENCHAMBER_VERSION=2.7.0
+ARG OPENCODE_VERSION=2.3.0
+ARG OPENCHAMBER_VERSION=2.7.1
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.18.0
-ARG CLAUDE_CODE_VERSION=2.1.319
+ARG CLAUDE_CODE_VERSION=2.1.323
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
