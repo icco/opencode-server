@@ -22,6 +22,12 @@
 - Resolve all code reviews by responding and marking review as resolved.
 - If you have questions, use the UI.
 
+## Memory
+
+- Save what you learn for later sessions with the OpenChamber memory tool: corrections, preferences, decisions with their reasons, and project facts that took effort to find. Open an entry when its title fits the task.
+- Durable facts about the user that every client should know also go to Notion Memory (`parent: "memory"`). Search it before personal or cross-project work.
+- Never store secrets or credentials in either memory.
+
 ## Scope
 
 - A narrow request defines the diff. Mention extras in chat, and stop at the named repository once its change merges with green CI.
@@ -94,7 +100,7 @@
 - Use only the template's sections. Tick its fixed checklist items without adding new ones, and write "No Risks Found" rather than dropping a risks section.
 - Six lines of content at most, excluding headers, covering what the PR does, what to look at, and risks or deferred work. Write for the reviewer, with no narrative, no bugs found along the way, and no test plan. Link detail that already lives in a README or the commit message.
 - No AI attribution in PR bodies. `Co-Authored-By` trailers in commits are fine.
-- Titles are lowercase Conventional Commits, and the squash-merged title drives the version bump. Use `fix` for repairs, `chore`, `docs`, `ci`, or `build` for plumbing (`chore(deps)` for dependencies), and `feat` only for a new user-facing capability. Never `refactor`. Mark breaking changes with `!` before the colon.
+- Titles are lowercase Conventional Commits, and the squash-merged title drives the version bump. Use `fix` for repairs and `fix(ci)` for CI changes, and `chore` with appropriate scope (such as `docs`, `build` or `deps`) for other plumbing. Use `feat` only for a new user-facing capability. Never `refactor`. Mark breaking changes with `!` before the colon.
 
 ## Personal sites
 

@@ -1,15 +1,41 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "update": "disable",
-  "model": "anthropic/claude-opus-5-5",
+  "model": "claude-agent/opus",
   "default_agent": "build",
   "providers": {
+    "anthropic": {
+      "models": {
+        "auto": {
+          "name": "Auto (Jev)",
+          "capabilities": { "tools": true },
+          "limit": { "context": 1000000, "output": 128000 }
+        }
+      }
+    },
     "openai": {
       "models": {
         "fast-agent": {
           "name": "Fast Agent",
           "capabilities": { "tools": true },
           "limit": { "context": 1048576, "output": 8192 }
+        }
+      }
+    },
+    "ollama": {
+      "name": "Ollama",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://ollama:11434/v1"
+      },
+      "models": {
+        "qwen3-coder:30b": {
+          "name": "Qwen3 Coder 30B",
+          "limit": { "context": 32768, "output": 8192 }
+        },
+        "ornith:35b": {
+          "name": "Ornith 35B",
+          "limit": { "context": 32768, "output": 8192 }
         }
       }
     }
@@ -81,25 +107,6 @@
       "model": "openai/fast-agent"
     }
   },
-  "providers": {
-    "ollama": {
-      "name": "Ollama",
-      "package": "@opencode/ai/providers/openai-compatible",
-      "settings": {
-        "baseURL": "http://ollama:11434/v1"
-      },
-      "models": {
-        "qwen3-coder:30b": {
-          "name": "Qwen3 Coder 30B",
-          "limit": { "context": 32768, "output": 8192 }
-        },
-        "ornith:35b": {
-          "name": "Ornith 35B",
-          "limit": { "context": 32768, "output": 8192 }
-        }
-      }
-    }
-  },
   "mcp": {
     "servers": {
       "notion": {
@@ -115,6 +122,10 @@
           "redirect_uri": "http://127.0.0.1:19876/callback",
           "scope": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose"
         }
+      },
+      "foods": {
+        "type": "remote",
+        "url": "https://foods.timeclimbers.com/mcp"
       },
       "robinhood": {
         "type": "remote",
@@ -137,7 +148,7 @@
         "command": [
           "npx",
           "-y",
-          "@akutishevsky/lunchmoney-mcp@3.0.0"
+          "@akutishevsky/lunchmoney-mcp@4.0.1"
         ],
         "environment": {
           "LUNCHMONEY_API_TOKEN": "{env:LUNCHMONEY_API_TOKEN}"
@@ -161,6 +172,14 @@
       "context7": {
         "type": "remote",
         "url": "https://mcp.context7.com/mcp"
+      },
+      "mastodon": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "activitypub-mcp"
+        ]
       }
     }
   },
@@ -169,8 +188,8 @@
   ],
   "plugins": [
     "opencode-wakatime@1.4.0",
-    "superpowers@git+https://github.com/obra/superpowers.git#2ce8aa15d05bd57213e6f746f953aafb7ded7a8b",
-    "@slkiser/opencode-quota@5.0.3"
+    "superpowers@git+https://github.com/obra/superpowers.git#22f0b463e7a5e579904dd6211a520321035526f7",
+    "@slkiser/opencode-quota@6.2.2"
   ],
   "policies": [
     {
@@ -196,6 +215,11 @@
     {
       "action": "provider.use",
       "resource": "ollama",
+      "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "claude-agent",
       "effect": "allow"
     }
   ]
