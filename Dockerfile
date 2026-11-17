@@ -17,16 +17,22 @@ COPY --from=yq /out/yq /usr/local/bin/yq
 COPY --from=gotools /out/task /out/golangci-lint /usr/local/bin/
 COPY --from=grafana/mcp-grafana:2.3.0@sha256:c27248b5919d09d64ea273ca1b128b32902c6796f6e2dfcd11849d4f1363f9ed /app/mcp-grafana /usr/local/bin/mcp-grafana
 
+# Chromium cannot create its user-namespace sandbox once the container drops all capabilities.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      bash-completion build-essential ca-certificates curl fd-find file fzf \
+      bash-completion build-essential ca-certificates chromium curl \
+      default-jdk-headless fd-find file fonts-liberation fonts-noto-color-emoji fzf \
       gettext-base gh git git-lfs jq less moreutils openssh-client openssl \
-      procps python3 python3-pip python3-venv ripgrep rsync shellcheck \
+      procps python-is-python3 python3 python3-pip python3-venv ripgrep rsync shellcheck \
       silversearcher-ag tini tmux tree unzip vim wget xz-utils zip zoxide zsh \
     && apt-get install -y --no-install-recommends --only-upgrade ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -s /usr/bin/fdfind /usr/local/bin/fd
+    && ln -s /usr/bin/fdfind /usr/local/bin/fd \
+    && printf 'export CHROMIUM_FLAGS="$CHROMIUM_FLAGS --no-sandbox --disable-dev-shm-usage"\n' > /etc/chromium.d/container
 
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
+    CHROME_BIN=/usr/bin/chromium \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
+    PUPPETEER_SKIP_DOWNLOAD=1
 
 ARG OPENCODE_VERSION=2.3.0
 ARG OPENCHAMBER_VERSION=2.7.2
