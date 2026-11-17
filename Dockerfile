@@ -19,7 +19,7 @@ COPY --from=grafana/mcp-grafana:2.3.0@sha256:c27248b5919d09d64ea273ca1b128b32902
 
 # Chromium cannot create its user-namespace sandbox once the container drops all capabilities.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      bash-completion borgbackup build-essential ca-certificates chromium curl \
+      bash-completion build-essential ca-certificates chromium curl \
       default-jdk-headless fd-find file fonts-liberation fonts-noto-color-emoji fzf \
       gettext-base gh git git-lfs jq less moreutils openssh-client openssl \
       procps python-is-python3 python3 python3-pip python3-venv ripgrep rsync shellcheck \

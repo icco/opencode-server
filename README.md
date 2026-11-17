@@ -118,7 +118,7 @@ The container runs as UID 1000 with dropped capabilities and resource limits. Lo
 
 ## Development
 
-The image includes Go, TypeScript, pnpm, go-task, golangci-lint, Claude Code, a JDK, BorgBackup, headless-capable Chromium (`CHROME_BIN`, `PUPPETEER_EXECUTABLE_PATH`, run without its sandbox), and shell tools. See [`Dockerfile`](Dockerfile) for pinned versions. Additional Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
+The image includes Go, TypeScript, pnpm, go-task, golangci-lint, Claude Code, a JDK, headless-capable Chromium (`CHROME_BIN`, `PUPPETEER_EXECUTABLE_PATH`, run without its sandbox), and shell tools. See [`Dockerfile`](Dockerfile) for pinned versions. Additional Go tools and pnpm global installs persist under `/data/go` and `/data/.local/share/pnpm`.
 
 With the Node.js and pnpm versions pinned in `Dockerfile` and `package.json`:
 

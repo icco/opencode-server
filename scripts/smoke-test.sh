@@ -10,7 +10,7 @@ expected_pnpm=$(node -p 'require("./package.json").packageManager.split("@")[1]'
 docker run --rm -e "EXPECTED_PNPM=$expected_pnpm" --entrypoint sh "$image" -ec '
   for tool in ag rg fd fdfind fzf tree zoxide jq yq sponge envsubst file rsync \
     wget zip unzip xz zsh shellcheck git-lfs less tmux vim openssl ps pgrep watch pnpm mcp-grafana \
-    task golangci-lint chromium java javac python borg; do
+    task golangci-lint chromium java javac python; do
     command -v "$tool"
   done
   test "$(pnpm --version)" = "$EXPECTED_PNPM"
@@ -20,7 +20,6 @@ docker run --rm -e "EXPECTED_PNPM=$expected_pnpm" --entrypoint sh "$image" -ec '
   golangci-lint version
   python --version
   java -version
-  borg --version
   tsc --version
   test -w "$(dirname "$PNPM_HOME")"
 '
