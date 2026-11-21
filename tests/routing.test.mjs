@@ -43,7 +43,7 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "foods", "gmail", "grafana", "karakeep", "lunchmoney", "mastodon", "notion", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@6.2.2"));
   const allowed = config.policies.filter(p => p.action === "provider.use" && p.effect === "allow").map(p => p.resource);
-  assert.deepEqual(allowed.sort(), ["anthropic", "claude-agent", "google", "openai"]);
+  assert.deepEqual(allowed.sort(), ["anthropic", "claude-agent", "google", "ollama", "openai"]);
   assert.ok(!config.permissions?.some(rule => rule.action === "*" && rule.effect === "allow"));
   assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
