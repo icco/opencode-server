@@ -17,6 +17,7 @@ COPY --from=yq /out/yq /usr/local/bin/yq
 COPY --from=gotools /out/task /out/golangci-lint /usr/local/bin/
 COPY --from=grafana/mcp-grafana:2.3.0@sha256:c27248b5919d09d64ea273ca1b128b32902c6796f6e2dfcd11849d4f1363f9ed /app/mcp-grafana /usr/local/bin/mcp-grafana
 
+ARG APT_DATE
 # Chromium cannot create its user-namespace sandbox once the container drops all capabilities.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       bash-completion build-essential ca-certificates chromium curl \
