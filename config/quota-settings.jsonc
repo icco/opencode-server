@@ -3,7 +3,7 @@
     "checking": { "waitForQuotaReset": false },
     "custom": [
       {
-        "id": "anthropic-api",
+        "id": "anthropic-budget",
         "providerId": "anthropic",
         "label": "Anthropic",
         "mode": "local-estimate",
