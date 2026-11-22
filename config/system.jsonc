@@ -138,7 +138,7 @@
         "command": [
           "npx",
           "-y",
-          "@karakeep/mcp@0.34.0"
+          "@karakeep/mcp@0.35.0"
         ],
         "environment": {
           "KARAKEEP_API_ADDR": "{env:KARAKEEP_API_ADDR}",
@@ -191,7 +191,7 @@
   "plugins": [
     "opencode-wakatime@1.4.0",
     "superpowers@git+https://github.com/obra/superpowers.git#22f0b463e7a5e579904dd6211a520321035526f7",
-    "@slkiser/opencode-quota@6.2.2"
+    "@slkiser/opencode-quota@6.3.0"
   ],
   "policies": [
     {
