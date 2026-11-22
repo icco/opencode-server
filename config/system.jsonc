@@ -21,6 +21,25 @@
           "limit": { "context": 1048576, "output": 8192 }
         }
       }
+    },
+    "recurse": {
+      "name": "Recurse LLM",
+      "env": ["RECURSE_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": { "baseURL": "https://llm.rcdis.co/v1" },
+      "models": {
+        "default": {
+          "name": "Recurse LLM",
+          "capabilities": {
+            "tools": true,
+            "input": ["text", "image"],
+            "output": ["text"],
+            "reasoning": { "supported": true, "effort": ["low", "medium", "high"] }
+          },
+          "settings": { "reasoningEffort": "high" },
+          "limit": { "context": 262144, "output": 32768 }
+        }
+      }
     }
   },
   "shell": "/usr/bin/zsh",
@@ -198,6 +217,11 @@
     {
       "action": "provider.use",
       "resource": "claude-agent",
+      "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "recurse",
       "effect": "allow"
     }
   ]
