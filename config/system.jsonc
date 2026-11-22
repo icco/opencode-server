@@ -218,6 +218,11 @@
       "action": "provider.use",
       "resource": "claude-agent",
       "effect": "allow"
+    },
+    {
+      "action": "provider.use",
+      "resource": "recurse",
+      "effect": "allow"
     }
   ]
 }
