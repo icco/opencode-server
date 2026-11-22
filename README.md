@@ -53,6 +53,7 @@ docker compose exec opencode opencode auth login claude-agent --method claude-lo
 - **Gemini:** enter a key or set `GOOGLE_GENERATIVE_AI_API_KEY`.
 - **Anthropic:** enter a [Console API key](https://console.anthropic.com/settings/keys) or set `ANTHROPIC_API_KEY`.
 - **OpenAI:** enter a [platform key](https://platform.openai.com/api-keys) or set `OPENAI_API_KEY`.
+- **Recurse LLM:** set `RECURSE_API_KEY` to an `rcllm_` key to enable `recurse/default`.
 - **Claude subscription:** `claude auth login` prints a URL; open it and paste the code back. Claude Code keeps the login in `/data/.claude/.credentials.json` and refreshes it. The next command connects the [Claude Agent provider](https://github.com/anomalyco/opencode/releases/tag/v2.2.3), which runs Claude Code with that login. Claude Code uses `ANTHROPIC_API_KEY` instead of the login whenever that variable is set, so give the Anthropic key to `providers.anthropic.settings.apiKey` rather than the environment.
 - **Git access:** set `GH_TOKEN` or run `docker compose exec opencode gh auth login --hostname github.com --git-protocol https --web`; stored credentials persist in `/data/.config/gh`. `GH_TOKEN` also authenticates pnpm to `@icco` packages on GitHub Packages via [`config/npmrc`](config/npmrc).
 - **WakaTime:** put your API key in `/data/.wakatime.cfg`, owned by `1000:1000` with mode `600`, using the [plugin's configuration format](https://github.com/angristan/opencode-wakatime#prerequisites).
