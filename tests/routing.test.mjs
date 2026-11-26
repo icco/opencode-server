@@ -48,8 +48,11 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
-  for (const action of ["bigquery_execute_sql", "pubsub_delete_*", "iam_create_*", "cloudbilling_set_*"])
-    assert.ok(config.agents.build.permissions.some(rule => rule.action === action && rule.effect === "deny"), `build denies ${action}`);
+  const last = action => config.agents.build.permissions.findLast(rule => rule.action === action || (rule.action.endsWith("*") && action.startsWith(rule.action.slice(0, -1))))?.effect;
+  for (const action of ["bigquery_execute_sql", "bigquery_cancel_job", "pubsub_publish", "pubsub_delete_topic", "iam_create_role", "cloudbilling_set_iam_policy"])
+    assert.equal(last(action), "deny", `build denies ${action}`);
+  for (const action of ["bigquery_execute_sql_readonly", "bigquery_list_dataset_ids", "pubsub_list_topics", "iam_get_role", "cloudbilling_list_services"])
+    assert.equal(last(action), "allow", `build allows ${action}`);
   assert.match(config.mcp.servers.cloudstorage.oauth.scope, /devstorage\.read_only$/);
 });
 
