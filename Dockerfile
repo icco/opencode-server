@@ -15,7 +15,7 @@ FROM node:26.13.1-trixie-slim AS tools
 COPY --from=golang /usr/local/go /usr/local/go
 COPY --from=yq /out/yq /usr/local/bin/yq
 COPY --from=gotools /out/task /out/golangci-lint /usr/local/bin/
-COPY --from=grafana/mcp-grafana:2.3.0@sha256:c27248b5919d09d64ea273ca1b128b32902c6796f6e2dfcd11849d4f1363f9ed /app/mcp-grafana /usr/local/bin/mcp-grafana
+COPY --from=grafana/mcp-grafana:2.4.0@sha256:63d4501d3166c2b9242d8a2b5b7df8892c59c6c477be3a2a61bcf8a252671f31 /app/mcp-grafana /usr/local/bin/mcp-grafana
 
 ARG APT_DATE
 # Chromium cannot create its user-namespace sandbox once the container drops all capabilities.
@@ -35,11 +35,11 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
     PUPPETEER_SKIP_DOWNLOAD=1
 
-ARG OPENCODE_VERSION=2.4.1
+ARG OPENCODE_VERSION=2.4.2
 ARG OPENCHAMBER_VERSION=2.8.0
 ARG TYPESCRIPT_VERSION=7.0.2
 ARG PNPM_VERSION=12.23.0
-ARG CLAUDE_CODE_VERSION=2.1.331
+ARG CLAUDE_CODE_VERSION=2.1.332
 ARG TARGETARCH
 ENV PNPM_HOME=/opt/pnpm
 ENV PATH=${PNPM_HOME}/bin:${PATH}
