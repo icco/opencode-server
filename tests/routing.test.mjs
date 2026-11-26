@@ -40,7 +40,7 @@ test("image-owned skills are discoverable", async () => {
 });
 
 test("existing providers, MCP integrations and quota are preserved", () => {
-  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "foods", "gmail", "grafana", "karakeep", "lunchmoney", "mastodon", "notion", "robinhood"]);
+  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["bigquery", "cloudbilling", "cloudmonitoring", "cloudstorage", "context7", "devknowledge", "foods", "gmail", "grafana", "iam", "karakeep", "lunchmoney", "maps", "mastodon", "notion", "pubsub", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@6.3.0"));
   const allowed = config.policies.filter(p => p.action === "provider.use" && p.effect === "allow").map(p => p.resource);
   assert.deepEqual(allowed.sort(), ["anthropic", "claude-agent", "google", "openai", "recurse"]);
@@ -48,6 +48,12 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
+  const last = action => config.agents.build.permissions.findLast(rule => rule.action === action || (rule.action.endsWith("*") && action.startsWith(rule.action.slice(0, -1))))?.effect;
+  for (const action of ["bigquery_execute_sql", "bigquery_cancel_job", "pubsub_publish", "pubsub_delete_topic", "iam_create_role", "cloudbilling_set_iam_policy"])
+    assert.equal(last(action), "deny", `build denies ${action}`);
+  for (const action of ["bigquery_execute_sql_readonly", "bigquery_list_dataset_ids", "pubsub_list_topics", "iam_get_role", "cloudbilling_list_services"])
+    assert.equal(last(action), "allow", `build allows ${action}`);
+  assert.match(config.mcp.servers.cloudstorage.oauth.scope, /devstorage\.read_only$/);
 });
 
 test("build defaults to the Claude Code subscription and quota shows $50 budgets", async () => {
