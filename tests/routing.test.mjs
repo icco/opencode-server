@@ -40,7 +40,7 @@ test("image-owned skills are discoverable", async () => {
 });
 
 test("existing providers, MCP integrations and quota are preserved", () => {
-  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["bigquery", "cloudbilling", "cloudmonitoring", "cloudstorage", "context7", "foods", "gmail", "grafana", "iam", "karakeep", "lunchmoney", "mastodon", "notion", "pubsub", "robinhood"]);
+  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["bigquery", "cloudbilling", "cloudmonitoring", "cloudstorage", "context7", "devknowledge", "foods", "gmail", "grafana", "iam", "karakeep", "lunchmoney", "maps", "mastodon", "notion", "pubsub", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@6.3.0"));
   const allowed = config.policies.filter(p => p.action === "provider.use" && p.effect === "allow").map(p => p.resource);
   assert.deepEqual(allowed.sort(), ["anthropic", "claude-agent", "google", "openai", "recurse"]);

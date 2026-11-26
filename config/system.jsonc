@@ -93,10 +93,12 @@
         { "action": "cloudbilling_*", "resource": "*", "effect": "deny" },
         { "action": "iam_*", "resource": "*", "effect": "deny" },
         { "action": "cloudmonitoring_*", "resource": "*", "effect": "deny" },
+        { "action": "maps_*", "resource": "*", "effect": "deny" },
         { "action": "subagent", "resource": "*", "effect": "deny" },
         { "action": "skill", "resource": "*", "effect": "allow" },
         { "action": "execute", "resource": "*", "effect": "allow" },
         { "action": "context7_*", "resource": "*", "effect": "allow" },
+        { "action": "devknowledge_*", "resource": "*", "effect": "allow" },
         { "action": "shell", "resource": "rm *.config*", "effect": "ask" },
         { "action": "shell", "resource": "rm *.local*", "effect": "ask" },
         { "action": "shell", "resource": "rm *HOME*", "effect": "ask" },
@@ -123,10 +125,12 @@
         { "action": "cloudbilling_*", "resource": "*", "effect": "deny" },
         { "action": "iam_*", "resource": "*", "effect": "deny" },
         { "action": "cloudmonitoring_*", "resource": "*", "effect": "deny" },
+        { "action": "maps_*", "resource": "*", "effect": "deny" },
         { "action": "subagent", "resource": "*", "effect": "deny" },
         { "action": "skill", "resource": "*", "effect": "allow" },
         { "action": "execute", "resource": "*", "effect": "allow" },
-        { "action": "context7_*", "resource": "*", "effect": "allow" }
+        { "action": "context7_*", "resource": "*", "effect": "allow" },
+        { "action": "devknowledge_*", "resource": "*", "effect": "allow" }
       ]
     },
     "title": {
@@ -262,6 +266,26 @@
           "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
           "redirect_uri": "http://127.0.0.1:19876/callback",
           "scope": "https://www.googleapis.com/auth/monitoring.read"
+        }
+      },
+      "maps": {
+        "type": "remote",
+        "url": "https://mapstools.googleapis.com/mcp",
+        "oauth": {
+          "client_id": "{env:GMAIL_MCP_CLIENT_ID}",
+          "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "redirect_uri": "http://127.0.0.1:19876/callback",
+          "scope": "https://www.googleapis.com/auth/maps-platform.mapstools"
+        }
+      },
+      "devknowledge": {
+        "type": "remote",
+        "url": "https://developerknowledge.googleapis.com/mcp",
+        "oauth": {
+          "client_id": "{env:GMAIL_MCP_CLIENT_ID}",
+          "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "redirect_uri": "http://127.0.0.1:19876/callback",
+          "scope": "https://www.googleapis.com/auth/devprofiles.full_control"
         }
       },
       "context7": {
