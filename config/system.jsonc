@@ -54,6 +54,19 @@
     "build": {
       "permissions": [
         { "action": "*", "resource": "*", "effect": "allow" },
+        { "action": "bigquery_execute_sql", "resource": "*", "effect": "deny" },
+        { "action": "bigquery_cancel_job", "resource": "*", "effect": "deny" },
+        { "action": "pubsub_create_*", "resource": "*", "effect": "deny" },
+        { "action": "pubsub_update_*", "resource": "*", "effect": "deny" },
+        { "action": "pubsub_delete_*", "resource": "*", "effect": "deny" },
+        { "action": "pubsub_publish", "resource": "*", "effect": "deny" },
+        { "action": "cloudbilling_create_*", "resource": "*", "effect": "deny" },
+        { "action": "cloudbilling_move_*", "resource": "*", "effect": "deny" },
+        { "action": "cloudbilling_set_*", "resource": "*", "effect": "deny" },
+        { "action": "iam_create_*", "resource": "*", "effect": "deny" },
+        { "action": "iam_update_*", "resource": "*", "effect": "deny" },
+        { "action": "iam_delete_*", "resource": "*", "effect": "deny" },
+        { "action": "iam_undelete_*", "resource": "*", "effect": "deny" },
         { "action": "shell", "resource": "rm *.config*", "effect": "ask" },
         { "action": "shell", "resource": "rm *.local*", "effect": "ask" },
         { "action": "shell", "resource": "rm *HOME*", "effect": "ask" },
@@ -72,6 +85,12 @@
         { "action": "gmail_*", "resource": "*", "effect": "deny" },
         { "action": "notion_*", "resource": "*", "effect": "deny" },
         { "action": "robinhood_*", "resource": "*", "effect": "deny" },
+        { "action": "bigquery_*", "resource": "*", "effect": "deny" },
+        { "action": "cloudstorage_*", "resource": "*", "effect": "deny" },
+        { "action": "pubsub_*", "resource": "*", "effect": "deny" },
+        { "action": "cloudbilling_*", "resource": "*", "effect": "deny" },
+        { "action": "iam_*", "resource": "*", "effect": "deny" },
+        { "action": "cloudmonitoring_*", "resource": "*", "effect": "deny" },
         { "action": "subagent", "resource": "*", "effect": "deny" },
         { "action": "skill", "resource": "*", "effect": "allow" },
         { "action": "execute", "resource": "*", "effect": "allow" },
@@ -96,6 +115,12 @@
         { "action": "gmail_*", "resource": "*", "effect": "deny" },
         { "action": "notion_*", "resource": "*", "effect": "deny" },
         { "action": "robinhood_*", "resource": "*", "effect": "deny" },
+        { "action": "bigquery_*", "resource": "*", "effect": "deny" },
+        { "action": "cloudstorage_*", "resource": "*", "effect": "deny" },
+        { "action": "pubsub_*", "resource": "*", "effect": "deny" },
+        { "action": "cloudbilling_*", "resource": "*", "effect": "deny" },
+        { "action": "iam_*", "resource": "*", "effect": "deny" },
+        { "action": "cloudmonitoring_*", "resource": "*", "effect": "deny" },
         { "action": "subagent", "resource": "*", "effect": "deny" },
         { "action": "skill", "resource": "*", "effect": "allow" },
         { "action": "execute", "resource": "*", "effect": "allow" },
@@ -169,6 +194,72 @@
         "environment": {
           "GRAFANA_URL": "{env:GRAFANA_URL}",
           "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{env:GRAFANA_SERVICE_ACCOUNT_TOKEN}"
+        }
+      },
+      "bigquery": {
+        "type": "remote",
+        "url": "https://bigquery.googleapis.com/mcp",
+        "headers": { "x-goog-user-project": "icco-cloud" },
+        "oauth": {
+          "client_id": "{env:GMAIL_MCP_CLIENT_ID}",
+          "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "redirect_uri": "http://127.0.0.1:19876/callback",
+          "scope": "https://www.googleapis.com/auth/bigquery"
+        }
+      },
+      "cloudstorage": {
+        "type": "remote",
+        "url": "https://storage.googleapis.com/storage/mcp",
+        "headers": { "x-goog-user-project": "icco-cloud" },
+        "oauth": {
+          "client_id": "{env:GMAIL_MCP_CLIENT_ID}",
+          "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "redirect_uri": "http://127.0.0.1:19876/callback",
+          "scope": "https://www.googleapis.com/auth/devstorage.read_only"
+        }
+      },
+      "pubsub": {
+        "type": "remote",
+        "url": "https://pubsub.googleapis.com/mcp",
+        "headers": { "x-goog-user-project": "icco-cloud" },
+        "oauth": {
+          "client_id": "{env:GMAIL_MCP_CLIENT_ID}",
+          "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "redirect_uri": "http://127.0.0.1:19876/callback",
+          "scope": "https://www.googleapis.com/auth/pubsub"
+        }
+      },
+      "cloudbilling": {
+        "type": "remote",
+        "url": "https://cloudbilling.googleapis.com/mcp",
+        "headers": { "x-goog-user-project": "icco-cloud" },
+        "oauth": {
+          "client_id": "{env:GMAIL_MCP_CLIENT_ID}",
+          "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "redirect_uri": "http://127.0.0.1:19876/callback",
+          "scope": "https://www.googleapis.com/auth/cloud-billing.readonly"
+        }
+      },
+      "iam": {
+        "type": "remote",
+        "url": "https://iam.googleapis.com/mcp",
+        "headers": { "x-goog-user-project": "icco-cloud" },
+        "oauth": {
+          "client_id": "{env:GMAIL_MCP_CLIENT_ID}",
+          "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "redirect_uri": "http://127.0.0.1:19876/callback",
+          "scope": "https://www.googleapis.com/auth/iam"
+        }
+      },
+      "cloudmonitoring": {
+        "type": "remote",
+        "url": "https://monitoring.googleapis.com/mcp",
+        "headers": { "x-goog-user-project": "icco-cloud" },
+        "oauth": {
+          "client_id": "{env:GMAIL_MCP_CLIENT_ID}",
+          "client_secret": "{env:GMAIL_MCP_CLIENT_SECRET}",
+          "redirect_uri": "http://127.0.0.1:19876/callback",
+          "scope": "https://www.googleapis.com/auth/monitoring.read"
         }
       },
       "context7": {

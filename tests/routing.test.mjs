@@ -40,7 +40,7 @@ test("image-owned skills are discoverable", async () => {
 });
 
 test("existing providers, MCP integrations and quota are preserved", () => {
-  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["context7", "foods", "gmail", "grafana", "karakeep", "lunchmoney", "mastodon", "notion", "robinhood"]);
+  assert.deepEqual(Object.keys(config.mcp.servers).sort(), ["bigquery", "cloudbilling", "cloudmonitoring", "cloudstorage", "context7", "foods", "gmail", "grafana", "iam", "karakeep", "lunchmoney", "mastodon", "notion", "pubsub", "robinhood"]);
   assert.ok(config.plugins.includes("@slkiser/opencode-quota@6.3.0"));
   const allowed = config.policies.filter(p => p.action === "provider.use" && p.effect === "allow").map(p => p.resource);
   assert.deepEqual(allowed.sort(), ["anthropic", "claude-agent", "google", "openai", "recurse"]);
@@ -48,6 +48,9 @@ test("existing providers, MCP integrations and quota are preserved", () => {
   assert.deepEqual(config.agents.build.permissions[0], { action: "*", resource: "*", effect: "allow" });
   for (const name of ["general", "explore"])
     assert.ok(config.agents[name].permissions.some(rule => rule.action === "robinhood_*" && rule.resource === "*" && rule.effect === "deny"), `${name} denies Robinhood tools`);
+  for (const action of ["bigquery_execute_sql", "pubsub_delete_*", "iam_create_*", "cloudbilling_set_*"])
+    assert.ok(config.agents.build.permissions.some(rule => rule.action === action && rule.effect === "deny"), `build denies ${action}`);
+  assert.match(config.mcp.servers.cloudstorage.oauth.scope, /devstorage\.read_only$/);
 });
 
 test("build defaults to the Claude Code subscription and quota shows $50 budgets", async () => {
